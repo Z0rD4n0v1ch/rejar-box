@@ -3,226 +3,182 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#172014">
+  <meta name="theme-color" content="#12150F">
   <title>Rejar Box</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=PT+Mono&display=swap" rel="stylesheet">
   <style>
     :root {
-      --page: #A9A48F;
-      --bezel: #3B4248;
-      --bezel-edge: #59626A;
-      --screen: #172014;
-      --ink: #CDBE8E;
-      --ink-dim: #8D8763;
-      --sel: #CDBE8E;
-      --sel-ink: #172014;
-      --rust: #9C4A26;
-      --olive: #4F5B32;
-      color-scheme: light dark;
+      --bg: #12150F;
+      --card: #1A1F17;
+      --line: #3A4A28;
+      --text: #D4CDB6;
+      --green: #8FBF5A;
+      --dim: #6E7A5E;
+      --yellow: #E8B33A;
+      --yellow-ink: #1A1A10;
+      color-scheme: dark;
       box-sizing: border-box;
       padding-top: env(safe-area-inset-top, 0px);
       padding-bottom: env(safe-area-inset-bottom, 0px);
     }
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) { --page: #1E2326; --bezel: #2F353A; --bezel-edge: #4A535A; }
-    }
-    :root[data-theme="dark"] { --page: #1E2326; --bezel: #2F353A; --bezel-edge: #4A535A; }
-
     *, *::before, *::after { box-sizing: inherit; }
-    html, body { height: 100%; margin: 0; }
+    html, body { margin: 0; min-height: 100%; }
     body {
-      background: var(--page);
-      font-family: "Pixelify Sans", "Courier New", monospace;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "PT Mono", "Courier New", monospace;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 40px 20px 32px; }
+
+    h1 {
+      margin: 0;
+      font-family: "Russo One", "Arial Black", sans-serif;
+      font-weight: 400;
+      font-size: clamp(40px, 9vw, 60px);
+      line-height: 1;
+      text-transform: uppercase;
+      color: var(--yellow);
+    }
+    .lead { max-width: 36em; margin: 18px 0 36px; color: var(--green); }
+
+    .games { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+
+    .card {
       display: grid;
-      place-items: center;
-      padding: 24px 12px;
+      grid-template-columns: 140px 1fr;
+      gap: 20px;
+      align-items: center;
+      padding: 20px;
+      background: var(--card);
+      border: 1px solid var(--line);
     }
+    .card:focus-within { border-color: var(--yellow); }
 
-    .phone {
-      width: min(100%, 360px);
-      background: var(--bezel);
-      border-radius: 30px;
-      padding: 20px 14px 28px;
-      box-shadow: inset 0 0 0 2px var(--bezel-edge);
-    }
-    .speaker {
-      width: 56px; height: 5px; margin: 0 auto 14px;
-      border-radius: 3px; background: var(--bezel-edge);
-    }
+    .cover { width: 140px; height: 96px; display: grid; place-items: center; }
+    .cover img { max-width: 100%; max-height: 100%; image-rendering: pixelated; }
+    .cover .letter { font-family: "Russo One", sans-serif; font-size: 44px; color: var(--line); }
 
-    .screen {
-      background: var(--screen);
-      color: var(--ink);
-      border: 3px solid #0E140C;
-      border-radius: 6px;
-      min-height: 500px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+    .card h2 {
+      margin: 0 0 6px;
+      font-family: "Russo One", "Arial Black", sans-serif;
+      font-weight: 400;
+      font-size: 22px;
+      line-height: 1.2;
+      color: #EFE9D6;
     }
+    .card p { margin: 0 0 10px; font-size: 14px; }
+    .tags { margin: 0 0 14px; font-size: 12px; color: var(--green); text-transform: uppercase; letter-spacing: 0.5px; }
 
-    .status {
-      display: flex; align-items: flex-end; justify-content: space-between;
-      padding: 6px 10px 4px; font-size: 14px; color: var(--ink-dim);
+    .play {
+      display: inline-block;
+      padding: 7px 16px;
+      background: var(--yellow);
+      color: var(--yellow-ink);
+      font-family: "Russo One", sans-serif;
+      font-size: 15px;
+      text-decoration: none;
     }
-    .bars { display: flex; gap: 2px; align-items: flex-end; height: 12px; }
-    .bars i { width: 3px; background: var(--ink-dim); display: block; }
-    .bars i:nth-child(1) { height: 4px; } .bars i:nth-child(2) { height: 6px; }
-    .bars i:nth-child(3) { height: 9px; } .bars i:nth-child(4) { height: 12px; }
+    .play:hover { background: #F5C653; }
+    .play:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
 
-    .brand {
-      margin: 18px 12px 16px;
-      font-size: 40px; font-weight: 600; line-height: 1;
-      letter-spacing: 1px;
-      text-shadow: 3px 3px 0 var(--rust);
-    }
-    .brand small {
-      display: block; margin-top: 10px;
-      font-size: 14px; font-weight: 400; letter-spacing: 0;
-      color: var(--ink-dim); text-shadow: none;
-    }
+    .empty { color: var(--dim); }
+    .empty code { color: var(--text); }
 
-    .list { list-style: none; margin: 0; padding: 0; flex: 1; overflow-y: auto; }
-    .item {
-      display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;
-      padding: 7px 12px; color: inherit; text-decoration: none; font-size: 18px;
-    }
-    .item:hover, .item:focus, .item.sel { background: var(--sel); color: var(--sel-ink); outline: none; }
-    .item:focus-visible { box-shadow: inset 0 0 0 2px var(--rust); }
-    .num { font-size: 14px; opacity: 0.7; }
-    .icon {
-      width: 34px; height: 34px; display: grid; place-items: center;
-      background: var(--olive); color: var(--ink); font-size: 20px; font-weight: 600;
-      image-rendering: pixelated;
-    }
-    img.icon { background: none; object-fit: contain; }
+    footer { margin-top: 48px; font-size: 13px; color: var(--dim); }
 
-    .desc {
-      min-height: 3.2em; padding: 8px 12px; font-size: 15px; line-height: 1.35;
-      color: var(--ink-dim); border-top: 2px solid var(--olive);
-    }
-    .empty { padding: 12px; font-size: 15px; line-height: 1.4; color: var(--ink-dim); }
-    .empty code { color: var(--ink); }
-
-    .softkeys { display: flex; justify-content: space-between; border-top: 2px solid var(--olive); }
-    .softkeys button {
-      background: none; border: 0; color: var(--ink); font: inherit; font-size: 17px;
-      padding: 10px 12px; cursor: pointer;
-    }
-    .softkeys button:focus-visible { outline: 2px solid var(--rust); outline-offset: -2px; }
-
-    @media (max-width: 480px) {
-      body { padding: 0; place-items: stretch; background: var(--screen); }
-      .phone { width: 100%; height: 100%; border-radius: 0; padding: 0; box-shadow: none; background: var(--screen); }
-      .speaker { display: none; }
-      .screen { height: 100%; min-height: 0; border: 0; border-radius: 0; }
+    @media (max-width: 520px) {
+      .wrap { padding-top: 28px; }
+      .card { grid-template-columns: 1fr; gap: 12px; }
+      .cover { width: 100%; height: 110px; }
     }
   </style>
 </head>
 <body>
-  <div class="phone">
-    <div class="speaker"></div>
-    <main class="screen">
-      <div class="status">
-        <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-        <span id="clock"></span>
-      </div>
+  <div class="wrap">
+    <h1>Rejar Box</h1>
+    <p class="lead">Старые Java-игры с кнопочных телефонов, пересобранные заново: своя графика, своя музыка, играется прямо в браузере телефона. Бесплатно.</p>
 
-      <h1 class="brand">Rejar Box<small>Старые Java-игры, собранные заново</small></h1>
+    <ul class="games" id="games"></ul>
 
-      <ul class="list" id="list"></ul>
-      <p class="desc" id="desc" aria-live="polite"></p>
-
-      <nav class="softkeys">
-        <button id="play">Играть</button>
-        <button id="mute"></button>
-      </nav>
-    </main>
+    <footer>Rejar Box · все спрайты и музыка сделаны для этого проекта</footer>
   </div>
 
   <script src="games/list.js"></script>
   <script>
     (function () {
-      const games = window.REJAR_GAMES || [];
-      const list = document.getElementById('list');
-      const desc = document.getElementById('desc');
-      const playBtn = document.getElementById('play');
-      const muteBtn = document.getElementById('mute');
-      let sel = 0;
-
-      // Звук: тот же ключ, что читает shared/engine.js
-      function isMuted() { try { return JSON.parse(localStorage.getItem('rejar:muted')) === true; } catch (e) { return false; } }
-      function setMuted(v) { try { localStorage.setItem('rejar:muted', JSON.stringify(v)); } catch (e) {} }
-      function renderMute() { muteBtn.textContent = isMuted() ? 'Звук выкл' : 'Звук вкл'; }
-      muteBtn.addEventListener('click', () => { setMuted(!isMuted()); renderMute(); });
-      renderMute();
-
-      function tick() {
-        const d = new Date();
-        document.getElementById('clock').textContent =
-          String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-      }
-      tick();
-      setInterval(tick, 20000);
+      const games = (window.REJAR_GAMES || []).filter((g) => !g.hidden);
+      const list = document.getElementById('games');
 
       if (!games.length) {
         list.outerHTML = '<p class="empty">Игр пока нет. Скопируй папку <code>games/template</code> и добавь строку в <code>games/list.js</code>.</p>';
-        playBtn.disabled = true;
         return;
       }
 
-      const items = games.map((g, i) => {
+      const links = games.map((g) => {
         const li = document.createElement('li');
-        const a = document.createElement('a');
-        a.className = 'item';
-        a.href = g.path || ('games/' + g.id + '/');
+        li.className = 'card';
 
-        let icon;
-        if (g.icon) {
-          icon = document.createElement('img');
-          icon.src = g.icon;
-          icon.alt = '';
+        const cover = document.createElement('div');
+        cover.className = 'cover';
+        const src = g.cover || g.icon;
+        if (src) {
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = '';
+          cover.appendChild(img);
         } else {
-          icon = document.createElement('span');
-          icon.textContent = (g.title || '?').trim()[0].toUpperCase();
+          const l = document.createElement('span');
+          l.className = 'letter';
+          l.textContent = (g.title || '?').trim()[0].toUpperCase();
+          cover.appendChild(l);
         }
-        icon.className = 'icon';
 
-        const title = document.createElement('span');
-        title.textContent = g.title;
+        const body = document.createElement('div');
+        const h = document.createElement('h2');
+        h.textContent = g.title;
+        body.appendChild(h);
 
-        const num = document.createElement('span');
-        num.className = 'num';
-        num.textContent = i < 9 ? String(i + 1) : '';
+        const text = g.note || g.desc;
+        if (text) {
+          const p = document.createElement('p');
+          p.textContent = text;
+          body.appendChild(p);
+        }
+        if (g.tags && g.tags.length) {
+          const t = document.createElement('div');
+          t.className = 'tags';
+          t.textContent = g.tags.join(' · ');
+          body.appendChild(t);
+        }
 
-        a.append(icon, title, num);
-        a.addEventListener('focus', () => select(i, false));
-        a.addEventListener('mouseenter', () => select(i, false));
-        li.appendChild(a);
+        const a = document.createElement('a');
+        a.className = 'play';
+        a.href = g.path || ('games/' + g.id + '/');
+        a.textContent = 'Играть';
+        body.appendChild(a);
+
+        li.append(cover, body);
         list.appendChild(li);
         return a;
       });
 
-      function select(i, focus) {
-        sel = (i + items.length) % items.length;
-        items.forEach((el, k) => el.classList.toggle('sel', k === sel));
-        desc.textContent = games[sel].note || '';
-        if (focus) items[sel].focus();
-      }
-
-      function launch(i) { location.href = items[i].href; }
-
-      playBtn.addEventListener('click', () => launch(sel));
-
+      // Стрелки переключают игры, цифры 1–9 запускают сразу
       document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowDown') { e.preventDefault(); select(sel + 1, true); }
-        else if (e.key === 'ArrowUp') { e.preventDefault(); select(sel - 1, true); }
-        else if (/^[1-9]$/.test(e.key) && items[+e.key - 1]) launch(+e.key - 1);
+        const i = links.indexOf(document.activeElement);
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          const step = e.key === 'ArrowDown' ? 1 : -1;
+          const next = i < 0 ? 0 : (i + step + links.length) % links.length;
+          links[next].focus();
+        } else if (/^[1-9]$/.test(e.key) && links[+e.key - 1]) {
+          location.href = links[+e.key - 1].href;
+        }
       });
-
-      select(0, false);
     })();
   </script>
 </body>
