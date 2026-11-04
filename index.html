@@ -1,229 +1,112 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#172014">
-  <title>Rejar Box</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --page: #A9A48F;
-      --bezel: #3B4248;
-      --bezel-edge: #59626A;
-      --screen: #172014;
-      --ink: #CDBE8E;
-      --ink-dim: #8D8763;
-      --sel: #CDBE8E;
-      --sel-ink: #172014;
-      --rust: #9C4A26;
-      --olive: #4F5B32;
-      color-scheme: light dark;
-      box-sizing: border-box;
-      padding-top: env(safe-area-inset-top, 0px);
-      padding-bottom: env(safe-area-inset-bottom, 0px);
-    }
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) { --page: #1E2326; --bezel: #2F353A; --bezel-edge: #4A535A; }
-    }
-    :root[data-theme="dark"] { --page: #1E2326; --bezel: #2F353A; --bezel-edge: #4A535A; }
-
-    *, *::before, *::after { box-sizing: inherit; }
-    html, body { height: 100%; margin: 0; }
-    body {
-      background: var(--page);
-      font-family: "Pixelify Sans", "Courier New", monospace;
-      display: grid;
-      place-items: center;
-      padding: 24px 12px;
-    }
-
-    .phone {
-      width: min(100%, 360px);
-      background: var(--bezel);
-      border-radius: 30px;
-      padding: 20px 14px 28px;
-      box-shadow: inset 0 0 0 2px var(--bezel-edge);
-    }
-    .speaker {
-      width: 56px; height: 5px; margin: 0 auto 14px;
-      border-radius: 3px; background: var(--bezel-edge);
-    }
-
-    .screen {
-      background: var(--screen);
-      color: var(--ink);
-      border: 3px solid #0E140C;
-      border-radius: 6px;
-      min-height: 500px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .status {
-      display: flex; align-items: flex-end; justify-content: space-between;
-      padding: 6px 10px 4px; font-size: 14px; color: var(--ink-dim);
-    }
-    .bars { display: flex; gap: 2px; align-items: flex-end; height: 12px; }
-    .bars i { width: 3px; background: var(--ink-dim); display: block; }
-    .bars i:nth-child(1) { height: 4px; } .bars i:nth-child(2) { height: 6px; }
-    .bars i:nth-child(3) { height: 9px; } .bars i:nth-child(4) { height: 12px; }
-
-    .brand {
-      margin: 18px 12px 16px;
-      font-size: 40px; font-weight: 600; line-height: 1;
-      letter-spacing: 1px;
-      text-shadow: 3px 3px 0 var(--rust);
-    }
-    .brand small {
-      display: block; margin-top: 10px;
-      font-size: 14px; font-weight: 400; letter-spacing: 0;
-      color: var(--ink-dim); text-shadow: none;
-    }
-
-    .list { list-style: none; margin: 0; padding: 0; flex: 1; overflow-y: auto; }
-    .item {
-      display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;
-      padding: 7px 12px; color: inherit; text-decoration: none; font-size: 18px;
-    }
-    .item:hover, .item:focus, .item.sel { background: var(--sel); color: var(--sel-ink); outline: none; }
-    .item:focus-visible { box-shadow: inset 0 0 0 2px var(--rust); }
-    .num { font-size: 14px; opacity: 0.7; }
-    .icon {
-      width: 34px; height: 34px; display: grid; place-items: center;
-      background: var(--olive); color: var(--ink); font-size: 20px; font-weight: 600;
-      image-rendering: pixelated;
-    }
-    img.icon { background: none; object-fit: contain; }
-
-    .desc {
-      min-height: 3.2em; padding: 8px 12px; font-size: 15px; line-height: 1.35;
-      color: var(--ink-dim); border-top: 2px solid var(--olive);
-    }
-    .empty { padding: 12px; font-size: 15px; line-height: 1.4; color: var(--ink-dim); }
-    .empty code { color: var(--ink); }
-
-    .softkeys { display: flex; justify-content: space-between; border-top: 2px solid var(--olive); }
-    .softkeys button {
-      background: none; border: 0; color: var(--ink); font: inherit; font-size: 17px;
-      padding: 10px 12px; cursor: pointer;
-    }
-    .softkeys button:focus-visible { outline: 2px solid var(--rust); outline-offset: -2px; }
-
-    @media (max-width: 480px) {
-      body { padding: 0; place-items: stretch; background: var(--screen); }
-      .phone { width: 100%; height: 100%; border-radius: 0; padding: 0; box-shadow: none; background: var(--screen); }
-      .speaker { display: none; }
-      .screen { height: 100%; min-height: 0; border: 0; border-radius: 0; }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rejar Box</title>
+<meta name="description" content="Rejar Box — бесплатные ремейки старых Java-игр для телефона, со своей графикой и музыкой.">
+<meta name="theme-color" content="#11150d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=PT+Mono&display=swap">
+<style>
+/* Shelf of game cartridges: dark olive field, amber accents, one column on phones */
+:root{--bg:#11150d;--panel:#1a2013;--line:#3a4a26;--fg:#e8e2c8;--muted:#9db36a;--accent:#e8b33a;--good:#9fe07a;color-scheme:dark;
+  --disp:'Russo One','Arial Black',sans-serif;--mono:'PT Mono','Courier New',monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 var(--mono);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:720px;margin:0 auto;padding-block:max(32px,env(safe-area-inset-top,0px)) 56px}
+header{display:flex;align-items:center;gap:14px}
+header img{width:56px;height:56px;image-rendering:pixelated}
+h1{font:400 clamp(36px,9vw,60px)/1 var(--disp);color:var(--accent);margin:0;letter-spacing:.02em}
+.tag{color:var(--muted);margin:14px 0 20px;max-width:56ch}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:24px;min-height:8px}
+.btn{font:400 15px var(--disp);background:var(--accent);color:#14160f;border:0;padding:9px 16px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.note{font-size:13px;color:#c8c2a8}
+.status{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.status.off{color:#ffb36b}
+.games{display:grid;gap:14px}
+.game{display:grid;grid-template-columns:120px 1fr;gap:20px;align-items:center;background:var(--panel);border:1px solid var(--line);
+  padding:20px;text-decoration:none;color:inherit}
+.game:hover,.game:focus-visible{border-color:var(--accent);outline:none}
+.game img{width:120px;height:auto;image-rendering:pixelated}
+.game h2{font:400 26px/1.1 var(--disp);margin:0 0 6px;color:var(--fg)}
+.game p{margin:0;color:#c8c2a8;font-size:14px}
+.meta{margin-top:10px;font-size:12px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.prog{margin-top:12px;font-size:13px;display:grid;gap:4px}
+.prog .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dashed #2c3820;padding-bottom:2px}
+.prog .row b{font-weight:400;color:var(--accent);font-variant-numeric:tabular-nums}
+.dots{display:flex;gap:4px;margin-top:2px}
+.dots i{width:14px;height:6px;background:#2c3820;display:block}
+.dots i.on{background:var(--good)}
+.play{display:inline-block;margin-top:12px;background:var(--accent);color:#14160f;font:400 15px var(--disp);padding:8px 16px}
+footer{margin-top:40px;font-size:13px;color:#7a7d6a}
+@media (max-width:480px){.game{grid-template-columns:1fr}.game img{width:100%;max-width:220px}}
+</style>
 </head>
 <body>
-  <div class="phone">
-    <div class="speaker"></div>
-    <main class="screen">
-      <div class="status">
-        <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-        <span id="clock"></span>
-      </div>
+<main>
+  <header><img src="icon-192.png" alt=""><h1>REJAR BOX</h1></header>
+  <p class="tag">Старые Java-игры с кнопочных телефонов, пересобранные заново: своя графика, своя музыка, играется прямо в браузере телефона. Бесплатно.</p>
 
-      <h1 class="brand">Rejar Box<small>Старые Java-игры, собранные заново</small></h1>
-
-      <ul class="list" id="list"></ul>
-      <p class="desc" id="desc" aria-live="polite"></p>
-
-      <nav class="softkeys">
-        <button id="play">Играть</button>
-        <button id="mute"></button>
-      </nav>
-    </main>
+  <div class="bar">
+    <button class="btn" id="install" hidden>Установить Rejar Box</button>
+    <span class="note" id="hint" hidden>Установка: меню Chrome ⋮ → «Добавить на главный экран»</span>
+    <span class="status" id="net"></span>
   </div>
 
-  <script src="games/list.js"></script>
-  <script>
-    (function () {
-      const games = window.REJAR_GAMES || [];
-      const list = document.getElementById('list');
-      const desc = document.getElementById('desc');
-      const playBtn = document.getElementById('play');
-      const muteBtn = document.getElementById('mute');
-      let sel = 0;
+  <section class="games" id="games"></section>
 
-      // Звук: тот же ключ, что читает shared/engine.js
-      function isMuted() { try { return JSON.parse(localStorage.getItem('rejar:muted')) === true; } catch (e) { return false; } }
-      function setMuted(v) { try { localStorage.setItem('rejar:muted', JSON.stringify(v)); } catch (e) {} }
-      function renderMute() { muteBtn.textContent = isMuted() ? 'Звук выкл' : 'Звук вкл'; }
-      muteBtn.addEventListener('click', () => { setMuted(!isMuted()); renderMute(); });
-      renderMute();
-
-      function tick() {
-        const d = new Date();
-        document.getElementById('clock').textContent =
-          String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-      }
-      tick();
-      setInterval(tick, 20000);
-
-      if (!games.length) {
-        list.outerHTML = '<p class="empty">Игр пока нет. Скопируй папку <code>games/template</code> и добавь строку в <code>games/list.js</code>.</p>';
-        playBtn.disabled = true;
-        return;
-      }
-
-      const items = games.map((g, i) => {
-        const li = document.createElement('li');
-        const a = document.createElement('a');
-        a.className = 'item';
-        a.href = g.path || ('games/' + g.id + '/');
-
-        let icon;
-        if (g.icon) {
-          icon = document.createElement('img');
-          icon.src = g.icon;
-          icon.alt = '';
-        } else {
-          icon = document.createElement('span');
-          icon.textContent = (g.title || '?').trim()[0].toUpperCase();
-        }
-        icon.className = 'icon';
-
-        const title = document.createElement('span');
-        title.textContent = g.title;
-
-        const num = document.createElement('span');
-        num.className = 'num';
-        num.textContent = i < 9 ? String(i + 1) : '';
-
-        a.append(icon, title, num);
-        a.addEventListener('focus', () => select(i, false));
-        a.addEventListener('mouseenter', () => select(i, false));
-        li.appendChild(a);
-        list.appendChild(li);
-        return a;
-      });
-
-      function select(i, focus) {
-        sel = (i + items.length) % items.length;
-        items.forEach((el, k) => el.classList.toggle('sel', k === sel));
-        desc.textContent = games[sel].note || '';
-        if (focus) items[sel].focus();
-      }
-
-      function launch(i) { location.href = items[i].href; }
-
-      playBtn.addEventListener('click', () => launch(sel));
-
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowDown') { e.preventDefault(); select(sel + 1, true); }
-        else if (e.key === 'ArrowUp') { e.preventDefault(); select(sel - 1, true); }
-        else if (/^[1-9]$/.test(e.key) && items[+e.key - 1]) launch(+e.key - 1);
-      });
-
-      select(0, false);
-    })();
-  </script>
+  <footer>Rejar Box · все спрайты и музыка сделаны для этого проекта · рекорды хранятся на этом устройстве</footer>
+</main>
+<script>
+// Каталог игр. Новая игра — новая запись: папка, обложка, описание и как читать её прогресс.
+const GAMES=[
+  {id:'steel-hornet',title:'Стальной Шершень',cover:'steel-hornet/cover.png',
+   desc:'Вертолёт против станции в городе, бронепоезда и корабля-базы, а пешком — штурм штаба и порта. Пять миссий, три сложности, звания и рекорды.',
+   meta:'Шутер · 5 миссий · телефон и ПК',
+   progress(get){
+     const N=5,D=['Легко','Норма','Тяжело'];let done=0;const best=[0,0,0];
+     for(let m=0;m<N;m++){let any=false;for(let d=0;d<3;d++){const v=+get('hornet_hi_d'+d+'_m'+m)||0;if(v>0)any=true;best[d]+=v;}if(any)done++;}
+     const unlocked=Math.min(N,(+get('hornet_unlock')||0)+1);
+     const rows=[];D.forEach((n,d)=>{if(best[d])rows.push(['Сумма рекордов · '+n,best[d].toLocaleString('ru-RU')]);});
+     return {done,total:N,open:unlocked,rows};}}
+];
+const get=k=>{try{const v=localStorage.getItem(k);return v==null?null:JSON.parse(v);}catch(e){return null;}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function render(){
+  const box=document.getElementById('games');box.innerHTML='';
+  for(const g of GAMES){
+    let P=null;try{P=g.progress(get);}catch(e){}
+    const a=document.createElement('a');a.className='game';a.href=g.id+'/';
+    let prog='';
+    if(P){const dots=Array.from({length:P.total},(_,i)=>'<i class="'+(i<P.done?'on':'')+'"></i>').join('');
+      prog='<div class="prog"><div class="row"><span>Пройдено миссий</span><b>'+P.done+' / '+P.total+'</b></div><div class="dots" aria-hidden="true">'+dots+'</div>'+
+        P.rows.map(r=>'<div class="row"><span>'+esc(r[0])+'</span><b>'+esc(r[1])+'</b></div>').join('')+'</div>';}
+    const started=P&&(P.done>0||P.open>1);
+    a.innerHTML='<img src="'+esc(g.cover)+'" alt="'+esc(g.title)+'"><div><h2>'+esc(g.title)+'</h2><p>'+esc(g.desc)+'</p><div class="meta">'+esc(g.meta)+'</div>'+prog+
+      '<span class="play">'+(started?'Продолжить':'Играть')+'</span></div>';
+    box.appendChild(a);}
+}
+render();
+addEventListener('pageshow',render);addEventListener('storage',render);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)render();});
+// установка и офлайн
+const inst=document.getElementById('install'),hint=document.getElementById('hint'),net=document.getElementById('net');
+const standalone=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches;
+let ev=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();ev=e;inst.hidden=false;hint.hidden=true;});
+inst.addEventListener('click',async()=>{if(!ev)return;ev.prompt();try{await ev.userChoice;}catch(e){}ev=null;inst.hidden=true;});
+addEventListener('appinstalled',()=>{inst.hidden=true;hint.hidden=true;});
+if(!standalone())setTimeout(()=>{if(!ev)hint.hidden=false;},2500);
+function netState(){net.textContent=navigator.onLine?'':'Нет сети — игры работают из кэша';net.className='status'+(navigator.onLine?'':' off');}
+addEventListener('online',netState);addEventListener('offline',netState);netState();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').then(()=>{if(navigator.serviceWorker.controller&&!net.textContent)net.textContent='Доступно без интернета';}).catch(()=>{});
+</script>
 </body>
 </html>
