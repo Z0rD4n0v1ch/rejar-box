@@ -5,10 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#172014">
   <title>Rejar Box</title>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icon-192.png">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <meta name="mobile-web-app-capable" content="yes">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
@@ -103,8 +99,6 @@
     }
     img.icon { background: none; object-fit: contain; }
 
-    .desc .stat { display: block; margin-top: 4px; color: var(--ink); }
-    #install[hidden] { display: none; }
     .desc {
       min-height: 3.2em; padding: 8px 12px; font-size: 15px; line-height: 1.35;
       color: var(--ink-dim); border-top: 2px solid var(--olive);
@@ -143,7 +137,6 @@
 
       <nav class="softkeys">
         <button id="play">Играть</button>
-        <button id="install" hidden>Установить</button>
         <button id="mute"></button>
       </nav>
     </main>
@@ -216,9 +209,6 @@
         sel = (i + items.length) % items.length;
         items.forEach((el, k) => el.classList.toggle('sel', k === sel));
         desc.textContent = games[sel].note || '';
-        let st = '';
-        try { st = games[sel].stats ? games[sel].stats() : ''; } catch (e) {}
-        if (st) { const b = document.createElement('span'); b.className = 'stat'; b.textContent = st; desc.appendChild(b); }
         if (focus) items[sel].focus();
       }
 
@@ -233,18 +223,6 @@
       });
 
       select(0, false);
-      // вернулся из игры — обновить прогресс
-      addEventListener('pageshow', () => select(sel, false));
-    })();
-
-    // Установка на телефон и работа без интернета
-    (function () {
-      const btn = document.getElementById('install');
-      let ev = null;
-      addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); ev = e; btn.hidden = false; });
-      btn.addEventListener('click', async () => { if (!ev) return; ev.prompt(); try { await ev.userChoice; } catch (e) {} ev = null; btn.hidden = true; });
-      addEventListener('appinstalled', () => { btn.hidden = true; });
-      if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
     })();
   </script>
 </body>
