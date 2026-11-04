@@ -6,6 +6,8 @@
 //   cover  — картинка для карточки (или null — будет буква)
 //   path   — адрес игры (по умолчанию games/<id>/)
 //   hidden — true, чтобы не показывать в меню
+//   color  — цвет картриджа на полке (необязательно)
+//   progress(get) — необязательно: прогресс для меню, вернуть {done, total, best, label}
 window.REJAR_GAMES = [
   {
     id: 'shershen',
@@ -13,7 +15,17 @@ window.REJAR_GAMES = [
     note: 'Вертолёт против станции в городе, бронепоезда и корабля-базы, а пешком — штурм штаба и порта. Пять миссий, три сложности, звания и рекорды.',
     tags: ['Шутер', '5 миссий', 'Телефон и ПК'],
     cover: 'games/shershen/cover.png',
-    path: 'games/shershen/'
+    path: 'games/shershen/',
+    color: '#4d6130', colorHi: '#73884a', colorDk: '#2c3a1e',
+    progress: function (get) {
+      let done = 0, best = 0;
+      for (let m = 0; m < 5; m++) {
+        let any = false;
+        for (let d = 0; d < 3; d++) { const v = +get('hornet_hi_d' + d + '_m' + m, 0) || 0; if (v > 0) any = true; best = Math.max(best, v); }
+        if (any) done++;
+      }
+      return { label: 'Пройдено миссий', done: done, total: 5, best: best };
+    }
   },
   {
     id: 'template',
