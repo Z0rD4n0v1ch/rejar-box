@@ -12,19 +12,19 @@ window.REJAR_GAMES = [
   {
     id: 'shershen',
     title: 'Стальной Шершень',
-    note: 'Вертолёт против станции в городе, бронепоезда, корабля-базы и ракеты на острове, а пешком — штурм штаба и порта. Шесть миссий, три сложности, звания и рекорды.',
-    tags: ['Шутер', '6 миссий', 'Телефон и ПК'],
+    note: 'Вертолёт против станции в городе, бронепоезда, корабля-базы, ракеты на острове и ночного секретного комплекса, а пешком — штурм штаба и порта. Семь миссий, три сложности, звания и рекорды.',
+    tags: ['Шутер', '7 миссий', 'Телефон и ПК'],
     cover: 'games/shershen/cover.png',
     path: 'games/shershen/',
     color: '#4d6130', colorHi: '#73884a', colorDk: '#2c3a1e',
     progress: function (get) {
       let done = 0, best = 0;
-      for (let m = 0; m < 6; m++) {
+      for (let m = 0; m < 7; m++) {
         let any = false;
         for (let d = 0; d < 3; d++) { const v = +get('hornet_hi_d' + d + '_m' + m, 0) || 0; if (v > 0) any = true; best = Math.max(best, v); }
         if (any) done++;
       }
-      return { label: 'Пройдено миссий', done: done, total: 6, best: best };
+      return { label: 'Пройдено миссий', done: done, total: 7, best: best };
     }
   },
   {
