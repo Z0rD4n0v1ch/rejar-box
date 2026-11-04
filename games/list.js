@@ -1,34 +1,27 @@
-// Список игр в меню Rejar Box.
-// Новая игра: скопируй папку games/template, затем добавь сюда строку.
-//   id    — имя папки
-//   title — название в меню
-//   note  — одна строка описания
-//   path  — адрес игры (по умолчанию games/<id>/)
-//   icon  — путь к картинке 32×32 (или null — будет буква)
-//   stats — необязательно: функция, возвращающая строку прогресса для меню
+// Список игр в меню Rejar Box. Карточки строятся из этого массива.
+//   id     — имя папки в games/
+//   title  — название
+//   note   — описание (1–2 предложения)
+//   tags   — короткие метки под описанием
+//   cover  — картинка для карточки (или null — будет буква)
+//   path   — адрес игры (по умолчанию games/<id>/)
+//   hidden — true, чтобы не показывать в меню
 window.REJAR_GAMES = [
   {
-    id: 'steel-hornet',
+    id: 'shershen',
     title: 'Стальной Шершень',
-    note: 'Вертолёт и пехота: станция, бронепоезд, штаб, корабль-база и порт. 5 миссий.',
-    path: 'steel-hornet/',
-    icon: 'steel-hornet/icon-list.png',
-    stats: function () {
-      const get = (k) => { try { return +JSON.parse(localStorage.getItem(k)) || 0; } catch (e) { return 0; } };
-      let done = 0, best = 0;
-      for (let m = 0; m < 5; m++) {
-        let any = false;
-        for (let d = 0; d < 3; d++) { const v = get('hornet_hi_d' + d + '_m' + m); if (v > 0) any = true; best = Math.max(best, v); }
-        if (any) done++;
-      }
-      return done ? 'Пройдено ' + done + '/5 · лучший счёт ' + best : '';
-    }
+    note: 'Вертолёт против станции в городе, бронепоезда и корабля-базы, а пешком — штурм штаба и порта. Пять миссий, три сложности, звания и рекорды.',
+    tags: ['Шутер', '5 миссий', 'Телефон и ПК'],
+    cover: 'games/shershen/cover.png',
+    path: 'games/shershen/'
   },
   {
     id: 'template',
     title: 'Шаблон',
     note: 'Пушка против ящиков. Образец для новых игр.',
+    tags: ['Образец'],
+    cover: null,
     path: 'games/template/',
-    icon: null
+    hidden: true
   }
 ];
