@@ -1,7 +1,8 @@
 // Rejar Box — офлайн-кэш витрины и всех игр. Добавляя игру, впиши её файлы в FILES и поменяй VERSION.
-const VERSION='rejarbox-v1';
-const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png',
-  './steel-hornet/','./steel-hornet/index.html','./steel-hornet/cover.png','./steel-hornet/manifest.webmanifest','./steel-hornet/icon-192.png','./steel-hornet/icon-512.png'];
+const VERSION='rejarbox-v2';
+const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./games/list.js','./shared/engine.js',
+  './games/template/','./games/template/index.html','./games/template/game.js',
+  './steel-hornet/','./steel-hornet/index.html','./steel-hornet/cover.png','./steel-hornet/manifest.webmanifest','./steel-hornet/icon-192.png','./steel-hornet/icon-512.png','./steel-hornet/icon-list.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith('rejarbox-')&&k!==VERSION).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',e=>{
