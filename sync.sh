@@ -1,42 +1,37 @@
 #!/usr/bin/env bash
-# Rejar Box: выкладывает папку на GitHub (репозиторий Z0rD4n0v1ch/rejar-box).
-# Запуск: открой Git Bash в этой папке и выполни  bash sync.sh  ["сообщение"]
+# Отправка Rejar Box на GitHub одной командой.
+#   ./sync.sh                 — сообщение коммита с датой
+#   ./sync.sh "Новая игра"    — своё сообщение
 set -e
-cd "$(dirname "$0")"
+
 REPO_URL="https://github.com/Z0rD4n0v1ch/rejar-box.git"
-MSG="${1:-Обновление $(date '+%Y-%m-%d %H:%M')}"
+BRANCH="main"
+
+cd "$(dirname "$0")"
 
 if [ ! -d .git ]; then
-  echo "== Первый запуск: создаю git-репозиторий"
-  git init -b main
+  echo "Первый запуск: создаю репозиторий"
+  git init -q
+  git checkout -q -b "$BRANCH"
   git remote add origin "$REPO_URL"
-  if git ls-remote --exit-code origin main >/dev/null 2>&1; then
-    echo "== На GitHub уже есть файлы — забираю их"
-    git fetch origin main
-    git reset --soft origin/main 2>/dev/null || true
-  fi
 fi
 
+# Без этого Git для Windows ругается на CRLF
 git config core.autocrlf false
+
 git add -A
 if git diff --cached --quiet; then
-  echo "== Изменений нет, выкладывать нечего"
+  echo "Новых изменений нет"
 else
-  git commit -m "$MSG"
+  MSG="${1:-Обновление $(date '+%Y-%m-%d %H:%M')}"
+  git commit -q -m "$MSG"
+  echo "Коммит: $MSG"
 fi
 
-echo "== Отправляю на GitHub"
-if ! git push -u origin main; then
-  echo
-  echo "!! Не получилось отправить. Частые причины:"
-  echo "   1) Репозиторий rejar-box ещё не создан на github.com (создай пустой, Public)."
-  echo "   2) На GitHub есть изменения, которых нет здесь: выполни  git pull --rebase origin main  и запусти скрипт снова."
-  echo "   3) Нет входа в GitHub: Git попросит логин; вместо пароля нужен токен (Settings → Developer settings → Tokens)."
-  exit 1
+# Если на GitHub уже есть коммиты — сначала забираем их
+if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+  git pull -q --rebase origin "$BRANCH"
 fi
 
-echo
-echo "== Готово!"
-echo "   Витрина:  https://z0rd4n0v1ch.github.io/rejar-box/"
-echo "   Игра:     https://z0rd4n0v1ch.github.io/rejar-box/steel-hornet/"
-echo "   (если ссылки не открываются — включи Pages: Settings → Pages → Branch: main, папка / (root) → Save)"
+git push -q -u origin "$BRANCH"
+echo "Готово. Сайт: https://z0rd4n0v1ch.github.io/rejar-box/"
