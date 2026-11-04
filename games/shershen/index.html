@@ -425,7 +425,7 @@ addEventListener('keydown',e=>{
     if(e.code==='Escape'||e.code==='KeyP'){G.paused=true;sfx('ui');}
     return;}
   if(ST.scene==='play'&&G.paused&&(e.code==='Escape'||e.code==='KeyP')){G.paused=false;return;}
-  if(ST.scene==='select'){const d={Digit1:0,Numpad1:0,Digit2:1,Numpad2:1,Digit3:2,Numpad3:2,Digit4:3,Numpad4:3,Digit5:4,Numpad5:4}[e.code];if(d!=null&&d<=ST.unlocked){ST.mission=d;sfx('ui');return;}
+  if(ST.scene==='select'){const d={Digit1:0,Numpad1:0,Digit2:1,Numpad2:1,Digit3:2,Numpad3:2,Digit4:3,Numpad4:3,Digit5:4,Numpad5:4,Digit6:5,Numpad6:5}[e.code];if(d!=null&&d<=ST.unlocked){ST.mission=d;sfx('ui');return;}
     if(e.code==='ArrowLeft'){ST.mission=Math.max(0,ST.mission-1);sfx('ui');return;}if(e.code==='ArrowRight'){ST.mission=Math.min(ST.unlocked,ST.mission+1);sfx('ui');return;}if(false){ST.mission=1;sfx('ui');return;}}
   const nav=UI.filter(b=>b.nav);
   if(KU.includes(e.code)||e.code==='ArrowUp'){ST.sel=(ST.sel-1+nav.length)%Math.max(1,nav.length);sfx('ui');}
@@ -445,12 +445,14 @@ addEventListener('resize',layout);
 /* ================= GAME STATE ================= */
 const ST={scene:'title',diff:store.get('hornet_diff',1),sel:0,t:0,mission:0,help:0,tw:0};
 {const old=[store.get('hornet_hi_m0',0),store.get('hornet_hi_m1',store.get('hornet_hi',0)),store.get('hornet_hi_m2',store.get('hornet_hi2',0))];
-  ST.H=[0,1,2].map(d=>[0,1,2,3,4].map(m=>store.get('hornet_hi_d'+d+'_m'+m,d===1?old[m]:0)));
+  // v6: «Причал» moved from slot 4 to 5 — carry its records over once
+  if(!store.get('hornet_v6',false)){for(let d=0;d<3;d++){const v=store.get('hornet_hi_d'+d+'_m4',0);if(v){store.set('hornet_hi_d'+d+'_m5',v);store.set('hornet_hi_d'+d+'_m4',0);}}store.set('hornet_v6',true);}
+  ST.H=[0,1,2].map(d=>[0,1,2,3,4,5].map(m=>store.get('hornet_hi_d'+d+'_m'+m,d===1?(old[m]||0):0)));
   ST.unlocked=store.get('hornet_unlock',old[2]>0?2:old[1]>0?1:0);}
 Object.defineProperty(ST,'his',{get(){return ST.H[ST.diff];}});
 function setHi(m,v){const h=ST.H[ST.diff];if(v>h[m]){h[m]=v;store.set('hornet_hi_d'+ST.diff+'_m'+m,v);return true;}return false;}
 function setDiff(d){ST.diff=d;store.set('hornet_diff',d);}
-const NMIS=5;
+const NMIS=6;
 function unlockNext(){if(ST.mission+1>ST.unlocked&&ST.mission<NMIS-1){ST.unlocked=ST.mission+1;store.set('hornet_unlock',ST.unlocked);}}
 const DIFF=[
  {n:'ЛЁГКАЯ',s:'ЛЕГКО',dmg:.6,fire:1.35,time:135,hp:1.3,drop:1.5,bs:.85,cp:1,more:false,mul:.75,info:'Больше бонусов, пули медленнее. Очки ×0.75'},
@@ -494,7 +496,7 @@ function newGame(cp){
   else if(lv.air){Object.assign(G.P,{landed:false,x:40,y:GH*0.35});G.mode='flight';G.scroll=SCROLL;}
 }
 function startHeli(cp){newGame(cp);ST.scene='play';music(G.lv.music||'battle');}
-const isInf=m=>m===2||m===4;
+const isInf=m=>m===2||m===5;
 function startMission(cp){if(isInf(ST.mission))startInf(cp);else startHeli(cp);}
 
 /* ---------- helpers ---------- */
@@ -535,7 +537,7 @@ function spawn(ev){
   case 'medal':g.pk.push({x:ev.x,y:GH*ev.y,type:'medal',star:true,t:0});break;
   case 'train':makeTrain();break;
   case 'station':makeStation();break;
-  default:if(spawnSea(ev,mk,cx))break;
+  default:if(spawnSea(ev,mk,cx))break;if(spawnIsland(ev,mk))break;
   case 'civcar':mk({k:'civ',civ:true,x:ev.x,y:baseY-10,w:22,h:10,hp:6,score:0,vx:Math.random()<.5?-0.6:0.45,ci:ri(0,2),col:pick(['#c9483a','#e9e6d8','#e8b33a','#5a8fb0','#7a9a4a']),fire:9999});break;}
 }
 function makeTrain(){
@@ -606,14 +608,14 @@ function updGame(){
     if(!g.locked){T.x+=T.speed;if(g.mode==='approach'&&T.x<g.camX+W*0.45){g.mode='boss';g.locked=true;g.off=g.camX-T.x;g.border=DIFF[ST.diff].time*60;music('boss');sfx('alarm');
         g.cp={hp:P.hp,power:P.power,rockets:P.rockets,bombs:P.bombs,score:g.score,medals:g.medals,shots:g.shots,hits:g.hits,kills:g.kills};}}
     else{
-      if(T.stopped)T.speed*=0.985;else if(g.mode==='fail')T.speed=Math.min(2.6,T.speed+0.03);else T.speed=Math.min(T.vmax,T.speed+0.004);
+      if(T.stopped)T.speed*=0.985;else if(g.mode==='fail'&&!T.launch)T.speed=Math.min(2.6,T.speed+0.03);else T.speed=Math.min(T.vmax,T.speed+0.004);
       T.x+=T.speed;
       if(g.mode==='boss'){
         const mn=-30,mx=T.len-W+(portrait?50:110);
         if(P.x>W*0.66&&inp.ax>0.3)g.off+=(P.x-W*0.66)/(W*0.34)*1.8;
         if(P.x<W*0.2&&inp.ax<-0.3)g.off-=(W*0.2-P.x)/(W*0.2)*1.8;
         if(g.off<mn)g.off=Math.min(mn,g.off+1.2);if(g.off>mx)g.off=mx;
-        if(!g.lv.noBorder&&--g.border<=0){g.mode='fail';g.endT=0;g.msg={s:'ШТАБ: Поезд ушёл за границу… Миссия провалена.',t:0};music(null);}
+        if(!g.lv.noBorder&&--g.border<=0){g.mode='fail';g.endT=0;g.msg={s:g.lv.failMsg||'ШТАБ: Поезд ушёл за границу… Миссия провалена.',t:0};music(null);}
         g.bossT++;
         if(g.bossT%640===320)spawn({t:'heli',y:rnd(.15,.45)});
         if(ST.diff===2&&g.bossT%900===600)spawn({t:'jet',y:rnd(.12,.3)});
@@ -649,7 +651,7 @@ function updGame(){
         if(e.y>groundY){e.falling=false;boom(e.x+e.w/2,groundY-4,3);if(g.lv.bg==='sea')sfx('splash');}}continue;}
     const onScr=e.x<g.camX+W-4&&e.x+e.w>g.camX+4&&!P.dead&&g.mode!=='win';
     const fm=fireMul();
-    if(!updSea(e,pw,onScr,fm))switch(e.k){
+    if(!updSea(e,pw,onScr,fm)&&!updIsland(e,pw,onScr,fm))switch(e.k){
     case 'sold':if(e.t%90<30)e.x-=0.25;if(onScr&&--e.fire<=0){e.fire=Math.round(ri(130,190)*fm);
         ebullet(e.x,e.y+3,pw.x,pw.y,1.5,{k:'rpg',dmg:12,r:2});sfx('eshot');}break;
     case 'jeep':e.x+=e.vx;if(onScr&&--e.fire<=0){e.fire=Math.round(ri(90,120)*fm);e.burst=3;}
@@ -696,6 +698,7 @@ function updGame(){
       default:p.fire=999;}
     }
   }
+  updLaunch();
   if(T){for(const p of T.parts){if(p.raise>0)p.raise--;const r=partRect(p);
       if(p.type==='loco'&&!p.skin&&!p.dead&&g.time%4===0)part(r.x+r.w*0.79,r.y+2,{k:'smoke',vx:-T.speed*0.6,vy:-0.6,life:60,r:3});
       if(p.dead&&g.time%6===0&&r.x<g.camX+W&&r.x+r.w>g.camX){part(r.x+rnd(6,r.w-6),r.y+4,{k:'fire',vy:-0.6,life:16,r:rnd(2,3)});part(r.x+rnd(6,r.w-6),r.y,{k:'smoke',vx:-T.speed*0.5,vy:-0.5,life:60,r:3});}}}
@@ -750,7 +753,7 @@ function updGame(){
   if(g.mode==='win'){g.endT++;if(g.endT<100&&g.endT%9===0&&T){const p=pick(T.parts),r=partRect(p);boom(r.x+rnd(0,r.w),r.y+rnd(0,r.h),ri(3,5));}
     if(g.endT===110){jingle(true);}if(g.endT>260)finish(true,'');}
   if(g.mode==='dead'){g.endT++;if(g.endT===60)jingle(false);if(g.endT>170)finish(false,'Вертолёт сбит');}
-  if(g.mode==='fail'){g.endT++;if(g.endT===40)jingle(false);if(g.endT>200)finish(false,'Поезд пересёк границу');}
+  if(g.mode==='fail'){g.endT++;if(g.endT===40)jingle(false);if(g.endT>200)finish(false,g.lv.failReason||'Поезд пересёк границу');}
 }
 function fireGun(){
   const g=G,P=g.P,ox=g.camX+P.x+HW-2,oy=P.y+HH*0.72;
@@ -813,7 +816,7 @@ function buildSoldiers(){
   SOL.p=set(null);SOL.e=set({g:'c',G:'C',h:'q'});SOL.s=set({g:'n',G:'N',h:'d'});SOL.g=set({g:'c',G:'r',h:'q'});SOL.c=set({G:'n',g:'R',h:'b'});
 }
 function buildInfLevel(){
-  if(ST.mission===4)return buildPortLevel();
+  if(ST.mission===5)return buildPortLevel();
   const L={sol:[],pl:[],bld:[],poles:[{x:714,top:-80,exit:-9},{x:1934,top:-32,exit:9},{x:2750,top:-80,exit:9},{x:2984,top:-92,exit:10}],end:3440,c4x:2884,deco:[{k:'stack',x:300,y:-33,w:36,h:33}],heliX:3372,roofY:-92,hq:{x:2400,w:520}};
   const sol=(x,y,w,h,k)=>L.sol.push({x,y,w,h,k});
   const pl=(x,y,w,k)=>L.pl.push({x,y,w,k});
@@ -850,7 +853,7 @@ function startInf(cp){
     P:{x:30,y:0,vx:0,vy:0,face:1,hp:Math.round(100*d.hp),max:Math.round(100*d.hp),inv:0,cool:0,wpn:'rifle',ammo:0,grens:3,
       onG:true,plat:null,crouch:false,roll:0,rdir:1,aim:0,drop:0,dead:false,dieT:0,anim:0,h:SH}};
   const g=G,E=(k,x,y)=>g.en.push(mkFoe(k,x,y));
-  if(ST.mission===4)setupPort(g,d);else{
+  if(ST.mission===5)setupPort(g,d);else{
   E('rif',230);E('rif',462);E('rif',494);E('rif',640,-40);E('snp',690,-80);
   E('mg',830);E('rif',880);E('rif',1040);E('gren',1370,-40);
   E('rif',1920);E('rif',2060);
@@ -882,7 +885,7 @@ function startInf(cp){
     for(const t of g.trg)if(t.x<=cp.x)t.done=true;
     if(cp.x>1700&&!g.port){g.apc.x=1680;g.apc.state='done';}
     g.camX=clamp(P.x-VW()*0.42,0,L.end-VW());}
-  ST.scene='play';music(ST.mission===4?'port':'street');
+  ST.scene='play';music(ST.mission===5?'port':'street');
 }
 /* ---------- physics ---------- */
 function isolids(){const g=G,t=g.tank,S=g.L.sol;if(!t)return S;
@@ -1383,6 +1386,7 @@ function drawLamps(camX){
 }
 function drawStationPart(p,x,wh,t){
   if(p.skin==='sh'){drawShipPart(p,x,wh,t);return;}
+  if(p.skin==='st_launch'){drawLaunchPart(p,x,wh,t);return;}
   const H=p.h+6,y=groundY-H,w=p.w,dead=p.dead;
   const c1=wh?'#fff':dead?'#2c2c2a':'#7a7d76',c2=wh?'#fff':dead?'#1c1c1b':'#55584f',c3=wh?'#fff':dead?'#333':'#9a9d94',k='#14160f';
   const barrels=(px,py,len,lw,twin)=>{if(dead)return;ctx.strokeStyle=wh?'#fff':'#1d1f1b';ctx.lineWidth=lw;
@@ -1469,7 +1473,8 @@ function updSea(e,pw,onScr,fm){
 function mineBoom(e){const g=G;if(e.dead)return;e.dead=true;sfx('splash');g.kills++;g.score+=e.score;addText(e.x+e.w/2,e.y-4,'+'+e.score);boom(e.x+e.w/2,e.y+e.h/2,4);
   for(const o of g.en)if(o!==e&&!o.dead&&!o.civ&&o.ground&&Math.abs(o.x+o.w/2-(e.x+e.w/2))<40)dmgEnemy(o,8);
   for(let i=0;i<8;i++)part(e.x+e.w/2,seaY(),{k:'dust',vx:rnd(-1.2,1.2),vy:rnd(-2.6,-1),life:30,r:2});}
-function drawSprE(e,x,y,wh){const S=SPR['m_'+e.spr];if(!S)return;const by=Math.sin((G.time+(e.bob||0))/18)*0.6;
+function drawSprE(e,x,y,wh){const S=SPR[e.sk||('m_'+e.spr)];if(!S)return;
+  if(e.k==='pillbox'){const px=x+e.pvx,py=y+e.pvy;ctx.strokeStyle=wh?'#fff':'#1d1f1b';ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px+Math.cos(e.ang)*13,py+Math.sin(e.ang)*13);ctx.stroke();}const by=Math.sin((G.time+(e.bob||0))/18)*0.6;
   ctx.save();ctx.translate(R(e.flip?x+e.w:x),R(y+by));if(e.flip)ctx.scale(-1,1);ctx.drawImage(wh?S.white:S.img,0,0,e.w,e.h);ctx.restore();}
 /* ---- background ---- */
 let SEASKY=null;
@@ -1519,6 +1524,103 @@ function drawShipPart(p,x,wh,t){
 function updShipPad(p,r){const g=G;if(p.type!=='pad'||p.dead)return;
   if(g.bossT%420===200){spawn({t:'heli',y:.45});const e=g.en[g.en.length-1];if(e&&e.k==='heli'){e.x=r.x+r.w*0.3;e.y=r.y-HH;}
     part(r.x+r.w/2,r.y,{k:'dust',vx:0,vy:-0.5,life:20,r:4});}}
+
+/* ================= MISSION 5 «ШКВАЛ»: strait → island → launch pad ================= */
+const SHORE4=1250;
+const EV4=[
+ {x:120,t:'msg',m:'ШТАБ: «Шершень», на острове Гребень готовят пуск тяжёлой ракеты. Пройдите пролив и уничтожьте пусковую башню!'},
+ {x:240,t:'pboat'},{x:330,t:'mine'},{x:380,t:'pboat'},{x:470,t:'mboat'},{x:560,t:'heli',y:.3},{x:620,t:'crate',p:'rockets'},
+ {x:700,t:'mine'},{x:740,t:'mine'},{x:820,t:'pboat'},{x:880,t:'mboat'},{x:940,t:'medal',y:.3},{x:1020,t:'jet',y:.2},
+ {x:1150,t:'msg',m:'РАДАР: Впереди берег! ЗРК и доты — держитесь выше и бейте ракетами.'},
+ {x:1330,t:'pill'},{x:1400,t:'sold'},{x:1440,t:'sold'},{x:1520,t:'sam'},{x:1600,t:'aa'},{x:1660,t:'crate',p:'repair'},
+ {x:1720,t:'tank'},{x:1800,t:'radar'},{x:1860,t:'heli',y:.25},{x:1900,t:'heli',y:.5},{x:1960,t:'pill'},{x:2030,t:'medal',y:.2},
+ {x:2100,t:'sam'},{x:2160,t:'jeep'},{x:2220,t:'aa'},{x:2280,t:'crate',p:'power'},{x:2360,t:'jet',y:.15},{x:2400,t:'jet',y:.35},
+ {x:2470,t:'depot'},{x:2530,t:'tank'},{x:2600,t:'sam'},{x:2660,t:'pill'},{x:2720,t:'medal',y:.55},{x:2760,t:'crate',p:'bomb'},
+ {x:2820,t:'msg',m:'ШТАБ: Вижу стартовую площадку! Пуск через считаные минуты. Сначала охрана — пока она цела, башня под защитой.'},{x:2920,t:'launch'}];
+LV[4]={ev:EV4,boss:'launch',bg:'island',shore:SHORE4,music:'sea',air:true,noBorder:false,civ:false,bossName:'БАШНЯ',target:'ЦЕЛЬ: ПУСКОВАЯ БАШНЯ',
+  timerLabel:'СТАРТ',failMsg:'ШТАБ: Ракета стартовала… Миссия провалена.',failReason:'Ракета стартовала',
+  winMsg:'ШТАБ: Башня рухнула, пуска не будет! Отличная работа, «Шершень». Домой!'};
+const LP=[
+ {type:'flak',skin:'st_aa',w:34,h:13,hp:18,score:800,tx:.52,ty:.2},
+ {type:'cannon',skin:'st_pill',w:44,h:17,hp:26,score:1200,tx:.71,ty:.4},
+ {type:'loco',skin:'st_launch',w:58,h:86,hp:140,score:7000,core:true},
+ {type:'launcher',skin:'st_sam',w:48,h:20,hp:22,score:1000,lx:.22},
+ {type:'flak',skin:'st_aa',w:34,h:13,hp:18,score:800,tx:.52,ty:.2}];
+function makeLaunch(){
+  const g=G;let off=0;
+  const parts=LP.map(p=>{const s=ST_PARTS.find(q=>q.skin===p.skin&&q.dh);const o=Object.assign({},p,s&&p.skin!=='st_aa'?{w:s.w,h:s.h,tx:s.tx!=null?s.tx:p.tx,ty:s.ty!=null?s.ty:p.ty,lx:s.lx!=null?s.lx:p.lx}:{},{off,max:p.hp,flash:0,fire:ri(60,120),dead:false,ang:-2.2});
+    off+=o.w+12;return o;});
+  g.train={x:g.camX+W+30,speed:0,vmax:0,parts,len:off-12,dist:0,stopped:false,station:true,launch:true,mis:0};g.mode='approach';
+}
+/* ground units on the island, built from earlier sprites */
+function spawnIsland(ev,mk){
+  switch(ev.t){
+  case 'sam':{const S=ART.n_sam,w=40,h=S?Math.round(S.h*w/S.w):20;mk({k:'samsite',sk:'n_sam',x:ev.x,y:baseY-h+1,w,h,hp:9,score:500,drop:.4,fire:ri(90,150),mx:w*0.2,my:h*0.08});return true;}
+  case 'pill':{const S=ART.n_pill,w=38,h=S?Math.round(S.h*w/S.w):18;mk({k:'pillbox',sk:'n_pill',x:ev.x,y:baseY-h+1,w,h,hp:12,score:450,drop:.35,fire:ri(70,120),ang:-2.4,pvx:w*0.71,pvy:h*0.14});return true;}
+  case 'launch':makeLaunch();return true;}
+  return false;
+}
+function updIsland(e,pw,onScr,fm){
+  const g=G;
+  switch(e.k){
+  case 'samsite':if(onScr&&--e.fire<=0){e.fire=Math.round(ri(200,260)*fm);g.eb.push({x:e.x+e.mx,y:e.y+e.my,vx:-0.4,vy:-2.4,dmg:12,k:'missile',r:2,t:0,home:1});sfx('rocket');part(e.x+e.mx,e.y+e.my,{k:'smoke',life:24,r:3});}return true;
+  case 'pillbox':{const px=e.x+e.pvx,py=e.y+e.pvy,ta=Math.atan2(pw.y-py,pw.x-px);e.ang=lerp(e.ang,clamp(ta,-Math.PI+0.15,-0.15),0.05);
+    if(onScr&&--e.fire<=0){e.fire=Math.round(ri(110,150)*fm);ebullet(px+Math.cos(e.ang)*12,py+Math.sin(e.ang)*12,pw.x,pw.y,2.3,{k:'shell',dmg:10,r:3});sfx('eshot');part(px+Math.cos(e.ang)*12,py+Math.sin(e.ang)*12,{k:'smoke',life:18,r:2});}}return true;}
+  return false;
+}
+/* launch tower boss: steam while counting down, missile lifts off on fail */
+function updLaunch(){const g=G,T=g.train;if(!T||!T.launch)return;const core=T.parts.find(p=>p.core);if(!core)return;const r=partRect(core);
+  if(g.mode==='boss'&&!core.dead){const k=1-g.border/(DIFF[ST.diff].time*60);if(g.time%Math.max(3,Math.round(14-k*11))===0)part(r.x+rnd(8,r.w*0.55),groundY-8,{k:'smoke',vx:rnd(-0.6,0.6),vy:-0.5,life:40,r:3});
+    if(k>0.75&&g.time%40===0)sfx('alarm');}
+  if(g.mode==='fail'&&!core.dead){T.mis=(T.mis||0)+Math.min(3.5,0.15+g.endT*0.04);if(g.endT===1){g.shake=8;sfx('bigboom');}
+    if(g.time%2===0)part(r.x+r.w*0.36,r.y+r.h-T.mis*0+8-T.mis,{k:'fire',vx:rnd(-.4,.4),vy:1.2,life:16,r:rnd(2,4)});
+    if(g.time%3===0)part(r.x+r.w*0.36,groundY-6,{k:'smoke',vx:rnd(-1.6,1.6),vy:-0.3,life:60,r:4});}}
+function drawLaunchPart(p,x,wh,t){
+  const H=p.h+6,y=groundY-H,w=p.w,dead=p.dead,k='#14160f',T=G.train;
+  const steel=wh?'#fff':dead?'#26282a':'#6a6d68',dk=wh?'#fff':dead?'#18191a':'#3e413d',rust='#7a4a2a';
+  // pad
+  ctx.fillStyle=wh?'#fff':dead?'#2a2a28':'#8a8780';ctx.fillRect(x-2,groundY-6,w+4,6);ctx.fillStyle=k;ctx.fillRect(x-2,groundY-1,w+4,1);
+  // missile (moves up on launch)
+  const mx=R(x+w*0.36)-5,mt=y+6-R(T&&T.mis||0);
+  if(!dead){ctx.fillStyle=k;ctx.fillRect(mx-1,mt+6,12,H-14);ctx.fillStyle=wh?'#fff':'#e9e6d8';ctx.fillRect(mx,mt+7,10,H-16);
+    ctx.fillStyle=wh?'#fff':'#c9c4b0';ctx.fillRect(mx+7,mt+7,3,H-16);
+    ctx.fillStyle=wh?'#fff':'#9c2f22';ctx.beginPath();ctx.moveTo(mx-1,mt+7);ctx.lineTo(mx+5,mt-3);ctx.lineTo(mx+11,mt+7);ctx.fill();
+    ctx.fillRect(mx,mt+28,10,3);ctx.fillRect(mx,mt+H-24,10,3);
+    ctx.fillStyle=wh?'#fff':'#55584f';ctx.fillRect(mx-5,mt+H-14,5,8);ctx.fillRect(mx+10,mt+H-14,5,8);}
+  else{ctx.fillStyle='#1d1d1b';ctx.fillRect(mx,groundY-26,10,20);ctx.fillRect(mx-4,groundY-12,6,6);}
+  // gantry lattice
+  const gx=R(x+w*0.62),gw=R(w*0.3);ctx.fillStyle=k;ctx.fillRect(gx-1,y,gw+2,H-5);ctx.fillStyle=steel;ctx.fillRect(gx,y+1,2,H-7);ctx.fillRect(gx+gw-2,y+1,2,H-7);
+  ctx.strokeStyle=dk;ctx.lineWidth=1;ctx.beginPath();for(let yy=y+4;yy<groundY-12;yy+=10){ctx.moveTo(gx+2,yy);ctx.lineTo(gx+gw-2,yy+10);ctx.moveTo(gx+gw-2,yy);ctx.lineTo(gx+2,yy+10);}ctx.stroke();
+  if(!dead&&!(T&&T.mis>2)){ctx.fillStyle=steel;for(const yy of[y+18,y+H*0.55])ctx.fillRect(mx+10,R(yy),gx-mx-10,2);}
+  ctx.fillStyle=wh?'#fff':rust;ctx.fillRect(gx-2,y,gw+4,3);
+  if(!dead&&t%30<15){ctx.fillStyle='#ff3a2a';ctx.fillRect(gx+gw/2-1,y-2,3,2);}
+  if(dead){ctx.fillStyle='rgba(20,18,14,.55)';ctx.fillRect(gx,y,gw,H-6);}
+}
+/* ---- island background: sea strip + beach ---- */
+function drawIslandGround(camX,t){
+  const sx0=R(SHORE4-camX),top=groundY-1;if(sx0>=W)return;
+  const x0=Math.max(0,sx0);
+  ctx.fillStyle='#d6be84';ctx.fillRect(x0,top,W-x0,GH-top);
+  ctx.fillStyle='#b99d62';ctx.fillRect(x0,top+5,W-x0,GH-top);
+  ctx.fillStyle='#9a8050';ctx.fillRect(x0,baseY+1,W-x0,GH-baseY);
+  ctx.fillStyle='#efdca4';ctx.fillRect(x0,top,W-x0,1);
+  if(sx0>-30){ctx.fillStyle='#e8e2c8';for(let i=0;i<5;i++)ctx.fillRect(sx0-6+i*3+R(Math.sin((t+i*9)/14)*2),top+3+i,4,1);
+    ctx.fillStyle='#d6be84';ctx.beginPath();ctx.moveTo(sx0-12,GH);ctx.lineTo(sx0,top);ctx.lineTo(sx0+2,GH);ctx.fill();}
+  // pebbles and grass tufts
+  const o=-((camX%37)+37)%37;for(let x=o;x<W;x+=37){if(x<sx0+6)continue;ctx.fillStyle='#8a7444';ctx.fillRect(R(x),top+9,2,1);ctx.fillStyle='#6a8a3a';ctx.fillRect(R(x+17),top-1,1,2);ctx.fillRect(R(x+19),top-2,1,3);}
+  // palms (placeholder art until sprites arrive)
+  const P=150,i0=Math.floor((camX-60)/P);
+  for(let i=i0;i<i0+W/P+3;i++){const wx=i*P+40;if(wx<SHORE4+30)continue;const px=R(wx-camX);if(px<-40||px>W+40)continue;drawPalm(px,top,hash(i)>0.5?1:-1,hash(i+3));}
+}
+function drawPalm(x,gy,dir,v){
+  const S=SPR.m_palm0;if(S){const h=40+R(v*12),w=Math.round(S.w*h/S.h);ctx.save();ctx.translate(x,0);if(dir<0)ctx.scale(-1,1);ctx.drawImage(S.img,-w/2,gy-h+2,w,h);ctx.restore();return;}
+  const h=34+R(v*10);ctx.fillStyle='#14160f';
+  for(let i=0;i<h;i+=3){const cx=x+R(Math.sin(i/h*1.4)*6*dir);ctx.fillStyle='#14160f';ctx.fillRect(cx-2,gy-i-3,5,4);ctx.fillStyle=i%6?'#7a5a34':'#5a4024';ctx.fillRect(cx-1,gy-i-3,3,3);}
+  const tx=x+R(Math.sin(1.4)*6*dir),ty=gy-h-2;
+  for(const[a,l]of[[-2.6,14],[-2.0,12],[-1.2,11],[-0.5,13],[0.1,12],[-3.0,10]]){for(let j=0;j<l;j++){const fx=R(tx+Math.cos(a)*j),fy=R(ty+Math.sin(a)*j+j*j*0.035);ctx.fillStyle='#14160f';ctx.fillRect(fx-1,fy-1,3,3);ctx.fillStyle=j%3?'#5d8a34':'#7aa83f';ctx.fillRect(fx,fy,2,2);}}
+  ctx.fillStyle='#5a4024';ctx.fillRect(tx-2,ty,2,2);ctx.fillRect(tx+1,ty+1,2,2);
+}
+function drawIslandFront(camX,t){const sx0=R(SHORE4-camX);if(sx0<=0)return;ctx.save();ctx.beginPath();ctx.rect(0,0,Math.min(W,sx0),GH);ctx.clip();drawSeaFront(camX,t);ctx.restore();}
 
 /* ================= MISSION 5 «ПРИЧАЛ»: infantry, port ================= */
 const PT={tw:0.6,crane:1,tank:0.6,boat:0.6};
@@ -1647,7 +1749,7 @@ function drawHeli(sp,x,y,tilt,t,white,flip,alpha){
 function drawEnemy(e,t){
   const x=sx(e.x),y=e.y,wh=e.flash>0;
   if(x>W+60||x<-80)return;
-  if(e.spr&&e.k!=='civ'){drawSprE(e,x,y,wh);return;}
+  if((e.spr||e.sk)&&e.k!=='civ'){drawSprE(e,x,y,wh);return;}
   switch(e.k){
   case 'sold':if(SPR.a_rpg)drawArt('rpg',x,y,wh);else spr(SPR.sold,x,y,wh);break;
   case 'jeep':if(SPR.a_jeep)drawArt('jeep',x,y+(t%8<4?0:-0.4),wh);else spr(SPR.jeep,x,y+(t%8<4?0:-0.4),wh);break;
@@ -1679,7 +1781,7 @@ function drawTrain(t){
   for(const p of T.parts){const r=partRect(p);const x=R(sx(r.x)),y=R(r.y),w=p.w,h=p.h;if(x>W+10||x+w<-10)continue;
     const wh=p.flash>0;const steel=wh?'#fff':p.dead?'#26282a':'#4c5563',dark=wh?'#fff':p.dead?'#18191a':'#2b2f38',lite=wh?'#fff':p.dead?'#333':'#76808f';
     // coupler
-    if(p.off>0&&p.skin!=='sh'){ctx.fillStyle='#14160f';ctx.fillRect(x-5,groundY-11,5,2);}
+    if(p.off>0&&!T.station){ctx.fillStyle='#14160f';ctx.fillRect(x-5,groundY-11,5,2);}
     // chassis + wheels
     const TS=p.skin?null:SPR['t_'+p.type];
     if(!p.skin&&!TS&&!(p.type==='loco'&&SPR.loco)){ctx.fillStyle=dark;ctx.fillRect(x+2,groundY-12,w-4,5);
@@ -1753,11 +1855,11 @@ function drawGame(){
   const g=G,P=g.P,t=g.time;
   ctx.save();ctx.beginPath();ctx.rect(0,0,W,GH);ctx.clip();
   if(g.shake)ctx.translate(R(rnd(-g.shake,g.shake)),R(rnd(-g.shake,g.shake)));
-  if(g.lv.bg==='sea')drawSeaBG(g.camX,ST.t);else if(g.lv.bg==='city'){drawCityBG(g.camX,-(GH-24));drawLamps(g.camX);drawGroundCity(g.camX);}else{drawBG(g.camX,ST.t);drawPoles(g.camX);drawGround(g.camX);}if(!g.lv.air)drawBase(g.camX);
+  if(g.lv.bg==='sea')drawSeaBG(g.camX,ST.t);else if(g.lv.bg==='island'){drawSeaBG(g.camX,ST.t);drawIslandGround(g.camX,ST.t);}else if(g.lv.bg==='city'){drawCityBG(g.camX,-(GH-24));drawLamps(g.camX);drawGroundCity(g.camX);}else{drawBG(g.camX,ST.t);drawPoles(g.camX);drawGround(g.camX);}if(!g.lv.air)drawBase(g.camX);
   for(const e of g.en)if(e.ruin||e.k==='depot'||e.k==='radar')drawEnemy(e,t);
   drawTrain(t);
   for(const e of g.en)if(e.ground&&!e.ruin&&e.k!=='depot'&&e.k!=='radar')drawEnemy(e,t);
-  if(g.lv.bg==='sea')drawSeaFront(g.camX,t);
+  if(g.lv.bg==='sea')drawSeaFront(g.camX,t);else if(g.lv.bg==='island')drawIslandFront(g.camX,t);
   for(const k of g.pk)drawPickup(k,t);
   drawParts();
   for(const e of g.en)if(!e.ground)drawEnemy(e,t);
@@ -1799,7 +1901,7 @@ function drawHUD(){
     ctx.fillStyle='rgba(16,20,12,.7)';ctx.fillRect(0,16,W,11);
     const loco=g.train.parts.find(p=>p.type==='loco');txt(g.lv.bossName,3,24,5,'#ff9a6a');bar(36,19,g.lv.noBorder?W-40:60,5,loco.hp/loco.max,'#d9572e');
     if(!g.lv.noBorder){const sec=Math.max(0,Math.ceil(g.border/60)),tot=DIFF[ST.diff].time;
-    txt('ГРАНИЦА',104,24,5,'#e8e2c8');bar(132,19,W-162,5,sec/tot,sec<20?(g.time%20<10?'#d9572e':'#e8b33a'):'#e8b33a');
+    txt(g.lv.timerLabel||'ГРАНИЦА',104,24,5,'#e8e2c8');bar(132,19,W-162,5,sec/tot,sec<20?(g.time%20<10?'#d9572e':'#e8b33a'):'#e8b33a');
     txt(sec+'с',W-3,25,7,sec<20?'#ff6a4a':'#e8e2c8','right');}}
 }
 function drawMsg(m){
@@ -1936,14 +2038,16 @@ const BRIEFS=[
   map:['ВЫСАДКА','ШТАБ','ЭВАКУАЦИЯ']},
  {date:'21 АПРЕЛЯ · 05:20',place:'ЗАЛИВ ВОРОТ',text:'ОБСТАНОВКА: остатки мятежников уходят морем. Флотом командует корабль-база — плавучий штаб с ракетами и вертолётной площадкой.\n\nЗАДАЧА: пройти над заливом, уничтожить катера и корвет охранения, затем потопить корабль-базу. Рубка под бронёй, пока цело вооружение.\n\nВ заливе рыбаки — не стрелять по гражданским лодкам.',
   map:['БАЗА','ЗАЛИВ','МЫС ВОРОТ']},
+ {date:'22 АПРЕЛЯ · 16:10',place:'ОСТРОВ ГРЕБЕНЬ',text:'ОБСТАНОВКА: после гибели корабля-базы мятежники готовят пуск тяжёлой ракеты с острова Гребень. Берег прикрывают ЗРК, доты и истребители.\n\nЗАДАЧА: пролететь над проливом, прорвать оборону побережья и уничтожить пусковую башню до старта. Таймер пошёл, как только вы подлетите к стартовой площадке.',
+  map:['ПРОЛИВ','ПЛЯЖ','СТАРТ']},
  {date:'23 АПРЕЛЯ · 23:40',place:'ПОРТ ЛИМАН',text:'ОБСТАНОВКА: без корабля-базы мятежники держатся за порт Лиман. Там их топливный склад — без него не уйдёт ни один катер.\n\nЗАДАЧА: высадиться на причал, взорвать три топливные цистерны и уйти на нашем катере, пока он ждёт у пирса.\n\nНа складах держат грузчиков — освободите их.',
   map:['ВЫСАДКА','ЦИСТЕРНЫ','КАТЕР']}];
 function drawSelect(){
   UI=[];if(ST.mission>=3)drawSeaBG(ST.t*0.5,ST.t,true);else if(ST.mission===2||ST.mission===0)drawCityStatic();else{drawBG(ST.t*0.5,ST.t);drawGround(ST.t*0.5);}
   ctx.fillStyle='rgba(10,14,8,.72)';ctx.fillRect(0,0,W,H);
   txt('ВЫБОР МИССИИ',W/2,24,13,'#fbe48a','center',FD);
-  const cards=[['1','ОПЕРАЦИЯ «ГРОМ»','Вертолёт · станция в городе'],['2','ОПЕРАЦИЯ «ГАДЮКА»','Вертолёт · бронепоезд'],['3','ОПЕРАЦИЯ «ЖЕЛЕЗНЫЙ КУЛАК»','Пехота · штурм штаба'],['4','ОПЕРАЦИЯ «ПРИЛИВ»','Вертолёт · корабль-база'],['5','ОПЕРАЦИЯ «ПРИЧАЛ»','Пехота · порт']];
-  const gap=Math.min(6,Math.max(2,Math.floor((H-150)/60))),ch=Math.min(54,Math.floor((H-146-gap*5)/5));
+  const cards=[['1','ОПЕРАЦИЯ «ГРОМ»','Вертолёт · станция в городе'],['2','ОПЕРАЦИЯ «ГАДЮКА»','Вертолёт · бронепоезд'],['3','ОПЕРАЦИЯ «ЖЕЛЕЗНЫЙ КУЛАК»','Пехота · штурм штаба'],['4','ОПЕРАЦИЯ «ПРИЛИВ»','Вертолёт · корабль-база'],['5','ОПЕРАЦИЯ «ШКВАЛ»','Вертолёт · ракетный остров'],['6','ОПЕРАЦИЯ «ПРИЧАЛ»','Пехота · порт']];
+  const NC=cards.length,gap=Math.min(6,Math.max(2,Math.floor((H-150)/60))),ch=Math.min(54,Math.floor((H-146-gap*NC)/NC));
   const sm=ch<40;
   cards.forEach(([n,name,sub],i)=>{const y=36+i*(ch+gap),x=16,w=W-32,sel=ST.mission===i,lock=i>ST.unlocked;
     ctx.fillStyle=lock?'#14170f':sel?'#2f3a22':'#1a2013';ctx.fillRect(x,y,w,ch);ctx.strokeStyle=sel?'#e8b33a':'#3a4a26';ctx.lineWidth=1;ctx.strokeRect(x+0.5,y+0.5,w-1,ch-1);
@@ -1955,7 +2059,7 @@ function drawSelect(){
     if(lock)txt('ЗАКРЫТО: пройдите миссию '+i,x+30,l1+st,6,'#7a6a4a');
     else{txt(sub,x+30,l1+st,6,'#9db36a');txt(ST.his[i]?'РЕКОРД: '+ST.his[i]:'рекорда пока нет',x+30,l1+st*2,6,'#c8c2a8');}
     UI.push({x,y,w,h:ch,act:()=>{if(!lock)ST.mission=i;},nav:false});});
-  let by=34+5*(ch+gap);const cw=(W-32)/3;
+  let by=34+NC*(ch+gap);const cw=(W-32)/3;
   DIFF.forEach((d,i)=>{const x=16+i*cw,on=ST.diff===i;ctx.fillStyle=on?['#2f4a22','#3a3a1c','#4a2418'][i]:'#1a2013';ctx.fillRect(x+1,by,cw-2,16);
     ctx.strokeStyle=on?'#e8b33a':'#3a4a26';ctx.strokeRect(x+1.5,by+0.5,cw-3,15);txt(d.s,x+cw/2,by+11,7,on?'#fbe48a':'#9db36a','center',FD);
     UI.push({x:x+1,y:by,w:cw-2,h:16,act:()=>setDiff(i),nav:false});});
@@ -2015,7 +2119,7 @@ let last=performance.now(),acc=0;
 function frame(now){
   acc+=Math.min(0.1,(now-last)/1000);last=now;
   while(acc>=1/60){acc-=1/60;ST.t++;if(ST.scene==='play'&&!G.paused)(G.kind==='inf'?updInf:updGame)();}
-  ambient(ST.scene==='play'&&G&&!G.paused&&((G.lv&&G.lv.bg==='sea')||G.port)?(G.port?0.05:0.08):0);
+  ambient(ST.scene==='play'&&G&&!G.paused&&((G.lv&&(G.lv.bg==='sea'||G.lv.bg==='island'))||G.port)?(G.port?0.05:G.lv.bg==='island'?0.05:0.08):0);
   render();requestAnimationFrame(frame);
 }
 buildSprites();buildSoldiers();loadArt();layout();newGame();
