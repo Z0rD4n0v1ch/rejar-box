@@ -1,0 +1,17 @@
+{
+  "name": "Стальной Шершень",
+  "short_name": "Шершень",
+  "description": "Вертолётный и пехотный шутер в духе мобильных игр 2007 года. Rejar Box.",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#11150d",
+  "theme_color": "#11150d",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
