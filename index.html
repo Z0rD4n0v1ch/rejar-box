@@ -90,6 +90,14 @@
     .play:hover { background: #F5C653; }
     .play:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
     .hintkeys { margin-top: 10px; font-size: 12px; color: var(--dim); }
+    .origin { margin: 14px 0 0; border-top: 1px dashed #2c3820; padding-top: 10px; font-size: 13px; }
+    .origin summary { cursor: pointer; color: var(--yellow); font: 400 15px var(--disp); list-style: none; }
+    .origin summary::-webkit-details-marker { display: none; }
+    .origin summary::before { content: "▸ "; } .origin[open] summary::before { content: "▾ "; }
+    .origin .src { margin: 8px 0 4px; color: #EFE9D6; }
+    .origin h4 { margin: 10px 0 2px; font: 400 13px var(--disp); color: var(--green); text-transform: uppercase; letter-spacing: .5px; }
+    .origin ul { margin: 2px 0; padding-left: 18px; } .origin li { margin: 2px 0; }
+    .origin .note { margin-top: 8px; font-size: 12px; color: var(--dim); }
 
     dialog { max-width: 560px; width: calc(100% - 32px); background: var(--card); color: var(--text); border: 1px solid var(--yellow); padding: 22px 22px 18px; font: 14px/1.6 var(--mono); }
     dialog::backdrop { background: rgba(6,8,5,.75); }
@@ -130,6 +138,7 @@
       <li>Код, графика, музыка и названия — свои.</li>
       <li>Старые игры служат только образцом: как играется, какие были уровни. Их файлы в проект не попадают.</li>
       <li>Всё бесплатно и без рекламы.</li>
+      <li>У каждой игры указано, по мотивам какой игры она сделана и чем от неё отличается («Оригинал и отличия» под описанием). Ремейки фанатские и не связаны с авторами оригиналов.</li>
     </ul>
     <h3>Как играть</h3>
     <ul>
@@ -255,9 +264,18 @@
         '<div><h2>' + esc(g.title) + '</h2>' + (g.note ? '<p>' + esc(g.note) + '</p>' : '') +
         (g.tags && g.tags.length ? '<div class="tags">' + g.tags.map(esc).join(' · ') + '</div>' : '') + prog +
         '<a class="play" href="' + esc(hrefOf(g)) + '" id="playBtn">' + (P && P.done > 0 ? 'Продолжить' : 'Играть') + '</a>' +
-        '<div class="hintkeys">◄ ► — выбрать · Enter — играть · 1–9 — сразу</div></div>';
+        '<div class="hintkeys">◄ ► — выбрать · Enter — играть · 1–9 — сразу</div>' + originOf(g) + '</div>';
       document.getElementById('playBtn').addEventListener('click', (e) => { e.preventDefault(); launch(sel); });
       if (sound) blip();
+    }
+    function originOf(g) {
+      const o = g.origin; if (!o) return '';
+      const li = (a) => a && a.length ? '<ul>' + a.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul>' : '';
+      return '<details class="origin"><summary>Оригинал и отличия</summary>' +
+        '<div class="src">По мотивам: <b>' + esc(o.title) + '</b>' + [o.by, o.year, o.platform].filter(Boolean).map((x) => ' · ' + esc(String(x))).join('') + '</div>' +
+        (g.kept && g.kept.length ? '<h4>Что взято из оригинала</h4>' + li(g.kept) : '') +
+        (g.changed && g.changed.length ? '<h4>Что в ремейке по-своему</h4>' + li(g.changed) : '') +
+        '<div class="note">Rejar Box — фанатский ремейк. Он не связан с авторами и правообладателями оригинала; их названия упомянуты только как источник идеи.</div></details>';
     }
     function launch(i) { jingle(); const h = hrefOf(games[i]); setTimeout(() => { location.href = h; }, AU.on && AU.ctx ? 260 : 0); }
 
