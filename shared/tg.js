@@ -106,6 +106,13 @@
     const a = parse(local), b = parse(cloud);
     if (typeof a === 'number' && typeof b === 'number') return a >= b ? local : cloud;
     if (typeof a === 'boolean' && typeof b === 'boolean') return JSON.stringify(a || b);
+    // списки (достижения) — объединяем; объекты (улучшения, статистика) — по каждому полю берём большее
+    if (Array.isArray(a) && Array.isArray(b)) return JSON.stringify([...new Set([...a, ...b])]);
+    if (a && b && typeof a === 'object' && typeof b === 'object') {
+      const o = Object.assign({}, b, a);
+      for (const k in b) if (typeof a[k] === 'number' && typeof b[k] === 'number') o[k] = Math.max(a[k], b[k]);
+      return JSON.stringify(o);
+    }
     return local;
   };
   const LS = window.localStorage;

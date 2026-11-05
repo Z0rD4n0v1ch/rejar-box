@@ -1,6 +1,6 @@
 // Борт 11 — офлайн-кэш ТОЛЬКО для папки games/shershen/ (корень сайта не трогает).
 // При обновлении игры меняй VERSION.
-const VERSION='shershen-v26';
+const VERSION='shershen-v27';
 const FILES=['./','./index.html','./manifest.webmanifest','./cover.png','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>(k.startsWith('shershen-')||k.startsWith('hornet-'))&&k!==VERSION).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
