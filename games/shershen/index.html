@@ -6,7 +6,7 @@
 <meta property="og:title" content="Стальной Шершень"><meta property="og:description" content="Ремейк старой Java-игры: вертолёт, бронепоезд, корабль-база, штурм штаба и порта. Бесплатно, в браузере.">
 <style>:root{padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}</style>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="../../shared/tg.js" data-back="../../"></script>
+<script src="../../shared/tg.js" data-back="../../" data-full="1"></script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -363,7 +363,10 @@ const any=a=>a.some(k=>keys.has(k));
 const CFG={size:store.get('hornet_btn',1),alpha:store.get('hornet_alpha',1),vib:store.get('hornet_vib',true)};
 const BSZ=[0.85,1,1.2],BAL=[0.35,0.55,0.8];
 function setCfg(k,v){CFG[k]=v;store.set({size:'hornet_btn',alpha:'hornet_alpha',vib:'hornet_vib'}[k],v);}
-function vib(ms){if(CFG.vib&&navigator.vibrate)try{navigator.vibrate(ms);}catch(e){}}
+function vib(ms){if(!CFG.vib)return;const T=window.REJAR_TG;
+  if(T&&T.HapticFeedback&&T.isVersionAtLeast&&T.isVersionAtLeast('6.1')){try{T.HapticFeedback.impactOccurred(ms>=50?'heavy':ms>=25?'medium':'light');}catch(e){}return;}
+  if(navigator.vibrate)try{navigator.vibrate(ms);}catch(e){}}
+function hapt(kind){const T=window.REJAR_TG;if(!CFG.vib||!T||!T.HapticFeedback)return;try{T.HapticFeedback.notificationOccurred(kind);}catch(e){}}
 function ctlGeom(){const g=ctlGeom0(),f=BSZ[CFG.size]||1;if(f===1)return g;
   for(const k of['stick','rocket','bomb','b3']){const c=g[k];if(!c)continue;c.r=Math.round(c.r*f);
     c.x=clamp(c.x,c.r+3,W-c.r-3);if(g.overlay)c.y=clamp(c.y,16+c.r+2,GH-c.r-3);else c.y=clamp(c.y,GH+c.r+3,H-c.r-3);}
@@ -567,12 +570,17 @@ function dropBonus(x,y,type){
   const P=G.P;if(!type){const r=Math.random();type=r<.3?'repair':r<.65?'rockets':r<.82?'bomb':'power';if(type==='power'&&P.power>=3)type='rockets';}
   G.pk.push({x,y,vy:-1.6,type,para:false,t:0});
 }
+/* boss parts take damage only in the fight itself and only when the helicopter is close */
+const BOSS_RANGE=150;
+function bossNear(p){const g=G,r=partRect(p),hx=g.camX+g.P.x+HW/2;if(r.x>g.camX+W-2)return false;return Math.max(r.x-hx,hx-(r.x+r.w),0)<=BOSS_RANGE;}
 function dmgPart(p,d){
+  const g0=G;if(g0.mode!=='boss')return;
+  if(!bossNear(p)){if(g0.time-(g0.farT||-99)>45){g0.farT=g0.time;const r=partRect(p);addText(Math.min(r.x+r.w/2,g0.camX+W-20),r.y-6,'БЛИЖЕ!','#c8c2a8');}return;}
   if(p.bomb){bombHit(p,d);return;}
   if(p.pop&&!p.up)return;
   if(p.dead)return;if((p.skin==='st_core'||p.core)&&G.train.parts.some(q=>!q.dead&&q!==p)){d*=0.3;if(G.time%40===0)addText(partRect(p).x+p.w/2,partRect(p).y-4,'БРОНЯ!','#c8c2a8');}
   p.hp-=d;p.flash=4;
-  if(p.hp<=0){p.hp=0;p.dead=true;const r=partRect(p);G.score+=p.score;addText(r.x+r.w/2,r.y-6,'+'+p.score,'#ffb36b');
+  if(p.hp<=0){p.hp=0;p.dead=true;vib(p.core||p.type==='loco'?60:20);const r=partRect(p);G.score+=p.score;addText(r.x+r.w/2,r.y-6,'+'+p.score,'#ffb36b');
     boom(r.x+r.w/2,r.y+r.h/2,5);G.shake=8;
     if(p.type==='cargo'){dropBonus(r.x+20,r.y,'repair');G.pk.push({x:r.x+r.w/2,y:r.y-20,type:'medal',star:true,t:0});G.msg={s:'ШТАБ: Груз уничтожен! Теперь — локомотив!',t:0};sfx('radio');}
     else if(p.type!=='loco')dropBonus(r.x+r.w/2,r.y,Math.random()<.5?'rockets':'repair');
@@ -589,7 +597,7 @@ function hurtPlayer(d){
   if(P.hp<=0){P.hp=0;P.dead=true;G.mode='dead';G.endT=0;boom(G.camX+P.x+HW/2,P.y+HH/2,4);music(null);rotor(0);}
 }
 function superBomb(){
-  const g=G,P=g.P;if(P.bombs<=0||P.landed||P.dead)return;P.bombs--;g.flash=22;g.shake=10;sfx('bomb');
+  const g=G,P=g.P;if(P.bombs<=0||P.landed||P.dead)return;P.bombs--;g.flash=22;g.shake=10;sfx('bomb');vib(45);
   part(g.camX+P.x+HW/2,P.y+HH/2,{k:'ring',r:4,life:30});
   for(const e of g.en)if(!e.dead&&!e.ruin&&!e.civ&&e.x<g.camX+W&&e.x+e.w>g.camX)dmgEnemy(e,25);
   if(g.train)for(const p of g.train.parts){if(p.bomb)continue;const r=partRect(p);if(r.x<g.camX+W&&r.x+r.w>g.camX)dmgPart(p,p.type==='loco'?14:18);}
@@ -614,11 +622,12 @@ function updGame(){
   if(g.mode==='flight'||g.mode==='approach'||(g.mode==='dead'&&!g.locked)){g.scroll=Math.min(SCROLL,g.scroll+0.01);g.camX+=g.scroll;}
   const T=g.train;
   if(T){
-    if(!g.locked){T.x+=T.speed;if(g.mode==='approach'&&T.x<g.camX+W*0.45){g.mode='boss';g.locked=true;g.off=g.camX-T.x;g.border=DIFF[ST.diff].time*60;music('boss');sfx('alarm');
+    if(!g.locked){T.x+=T.speed;if(g.mode==='approach'&&T.x<g.camX+W*0.45){g.mode='intro';g.introT=0;g.eb=[];g.locked=true;g.off=g.camX-T.x;g.border=DIFF[ST.diff].time*60;music('boss');sfx('alarm');
         g.cp={hp:P.hp,power:P.power,rockets:P.rockets,bombs:P.bombs,score:g.score,medals:g.medals,shots:g.shots,hits:g.hits,kills:g.kills};}}
     else{
       if(T.stopped)T.speed*=0.985;else if(g.mode==='fail'&&!T.launch&&!T.station)T.speed=Math.min(2.6,T.speed+0.03);else T.speed=Math.min(T.vmax,T.speed+0.004);
       T.x+=T.speed;
+      if(g.mode==='intro')updIntro();
       if(g.mode==='boss'){
         const mn=-30,mx=T.len-W+(portrait?50:110);
         if(P.x>W*0.66&&inp.ax>0.3)g.off+=(P.x-W*0.66)/(W*0.34)*1.8;
@@ -638,13 +647,14 @@ function updGame(){
   // --- player
   if(!P.dead){
     if(!P.landed){
-      P.vx+=inp.ax*0.32;P.vy+=inp.ay*0.32;P.vx*=0.86;P.vy*=0.86;P.x+=P.vx;P.y+=P.vy;
+      let ax=inp.ax,ay=inp.ay;if(g.mode==='intro'){ax=clamp((W*0.16-P.x)/24,-1,1);ay=clamp((groundY-82-P.y)/24,-1,1);P.inv=Math.max(P.inv,2);}
+      P.vx+=ax*0.32;P.vy+=ay*0.32;P.vx*=0.86;P.vy*=0.86;P.x+=P.vx;P.y+=P.vy;
       if(P.x<4){P.x=4;P.vx=0;}if(P.x>W-HW-4){P.x=W-HW-4;P.vx=0;}{const ct=caveTop(g.camX+P.x+HW/2);if(P.y<ct){P.y=ct;P.vy=Math.max(0,P.vy);}}if(P.y>GH-HH-14){P.y=GH-HH-14;P.vy=0;}
       P.tilt=lerp(P.tilt,P.vx*0.09,0.2);
-      if(--P.fire<=0&&g.mode!=='win'){P.fire=7;fireGun();}
+      if(--P.fire<=0&&g.mode!=='win'&&g.mode!=='intro'){P.fire=7;fireGun();}
       if(P.rcd>0)P.rcd--;
-      if(inp.rocket&&P.rcd<=0&&P.rockets>0&&g.mode!=='win'){fireRocket();P.rcd=14;}
-      if(inp.bomb)superBomb();
+      if(inp.rocket&&P.rcd<=0&&P.rockets>0&&g.mode!=='win'&&g.mode!=='intro'){fireRocket();P.rcd=14;}
+      if(inp.bomb&&g.mode!=='intro')superBomb();
       rotor(0.11);
       if(P.y>GH-60&&g.time%3===0)part(g.camX+P.x+rnd(0,HW),groundY+rnd(0,8),{k:'dust',vx:rnd(-1,1),vy:-0.2,life:20,r:2});
     }
@@ -658,7 +668,7 @@ function updGame(){
     if(e.ruin){if(e.t%7===0&&e.t<900)part(e.x+rnd(4,e.w-4),e.y+e.h*0.4,{k:'smoke',vy:-0.4,vx:-0.1,life:70,r:3});continue;}
     if(e.dead){if(e.falling){e.vy=(e.vy||0)+0.12;e.y+=e.vy;e.x+=g.scroll*0.5;if(e.t%3===0)part(e.x+e.w/2,e.y+5,{k:'smoke',life:40,r:3});
         if(e.y>groundY){e.falling=false;boom(e.x+e.w/2,groundY-4,3);if(g.lv.bg==='sea')sfx('splash');}}continue;}
-    const onScr=e.x<g.camX+W-4&&e.x+e.w>g.camX+4&&!P.dead&&g.mode!=='win';
+    const onScr=e.x<g.camX+W-4&&e.x+e.w>g.camX+4&&!P.dead&&g.mode!=='win'&&g.mode!=='intro';
     const fm=fireMul();
     if(!updSea(e,pw,onScr,fm)&&!updIsland(e,pw,onScr,fm)&&!updNight(e,pw,onScr,fm)&&!updEscort(e,pw,onScr,fm)&&!updCave(e,pw,onScr,fm))switch(e.k){
     case 'sold':if(e.t%90<30)e.x-=0.25;if(onScr&&--e.fire<=0){e.fire=Math.round(ri(130,190)*fm);
@@ -779,10 +789,15 @@ function fireRocket(){const g=G,P=g.P;P.rockets--;g.shots++;
 function hitEnemy(x,y){for(const e of G.en)if(!e.dead&&!e.ruin&&!e.warn&&x>=e.x&&x<=e.x+e.w&&y>=e.y&&y<=e.y+e.h)return e;return null;}
 function hitPart(x,y){const T=G.train;if(!T)return null;for(const p of T.parts){const r=partRect(p);if(x>=r.x&&x<=r.x+r.w&&y>=r.y-(p.type==='loco'?0:8)&&y<=groundY)return p;}return null;}
 function tgCenter(t){if(t.off!==undefined){const r=partRect(t);return {x:r.x+r.w/2,y:r.y+r.h/2};}return {x:t.x+t.w/2,y:t.y+t.h/2};}
+/* boss intro cut-scene: the helicopter flies in close, the camera frames the target */
+const INTRO_T=170;
+function updIntro(){const g=G,P=g.P;g.introT++;g.off=lerp(g.off,-W*0.5,0.04);
+  if(g.introT===20)sfx('radio');
+  if(g.introT>=INTRO_T||(g.introT>45&&(inp.rocket||inp.bomb))){g.mode='boss';g.bossT=0;P.rcd=20;inp.bomb=false;sfx('alarm');}}
 function findTarget(x,y){
   let best=null,bd=1e9;const g=G;
   for(const e of g.en){if(e.dead||e.ruin||e.warn||e.civ)continue;if(e.x+e.w<x-10||e.x>g.camX+W+10)continue;const d=Math.hypot(e.x-x,e.y-y);if(d<bd){bd=d;best=e;}}
-  if(g.train)for(const p of g.train.parts){if(p.dead||p.bomb)continue;const r=partRect(p);if(r.x+r.w<x-10||r.x>g.camX+W)continue;const d=Math.hypot(r.x+r.w/2-x,r.y-y)+(p.type==='cargo'?40:0);if(d<bd){bd=d;best=p;}}
+  if(g.train&&g.mode==='boss')for(const p of g.train.parts){if(p.dead||p.bomb)continue;const r=partRect(p);if(r.x+r.w<x-10||r.x>g.camX+W)continue;const d=Math.hypot(r.x+r.w/2-x,r.y-y)+(p.type==='cargo'?40:0);if(d<bd){bd=d;best=p;}}
   return best;
 }
 function finish(win,reason){
@@ -792,7 +807,7 @@ function finish(win,reason){
     if(g.lv.civ){const cb=g.civHit?0:2000;bonus+=cb;lines.push(g.civHit?[g.lv.civLine||'Мирных машин подбито',g.civHit]:['Без жертв среди мирных',cb]);}if(g.lv.extraResult)bonus+=g.lv.extraResult(g,lines);unlockNext();}
   const acc=g.shots?Math.round(g.hits/g.shots*100):0;
   const total=diffLine(lines,g.score+bonus);const newHi=win&&setHi(ST.mission,total);
-  g.res={win,reason,score:g.score,lines,total,acc,medals:g.medals,kills:g.kills,rank:rankOf(win?total:Math.round(total*0.5)),newHi};
+  g.res={win,reason,score:g.score,lines,total,acc,medals:g.medals,kills:g.kills,rank:rankOf(win?total:Math.round(total*0.5)),newHi};hapt(win?'success':'error');
   ST.scene='result';ST.sel=0;rotor(0);music(null);
 }
 
@@ -1123,7 +1138,7 @@ function finishInf(win,reason){
   lines.push(['Спасено мирных',g.saved+' / '+(g.civN||2)]);
   const acc=g.shots?Math.min(100,Math.round(g.hits/g.shots*100)):0,total=diffLine(lines,g.score+bonus);
   const newHi=win&&setHi(ST.mission,total);
-  g.res={win,reason,score:g.score,lines,total,acc,medals:g.medals,kills:g.kills,rank:rankOf(win?total:Math.round(total*0.5)),newHi};
+  g.res={win,reason,score:g.score,lines,total,acc,medals:g.medals,kills:g.kills,rank:rankOf(win?total:Math.round(total*0.5)),newHi};hapt(win?'success':'error');
   ST.scene='result';ST.sel=0;rotor(0);music(null);
 }
 /* ---------- drawing ---------- */
@@ -1192,8 +1207,9 @@ function drawInf(){
   if(g.shake)ctx.translate(R(rnd(-g.shake,g.shake)),R(rnd(-g.shake,g.shake)));
   if(g.port)drawPortBG(g.camX,-g.camY*IZ);else if(g.gl)drawGenBG(g.camX,g.camY*IZ);else drawCityBG(g.camX,g.camY*IZ);
   ctx.save();ctx.scale(IZ,IZ);ctx.translate(0,Math.round(-g.camY*IZ)/IZ);
+  if(g.gl)drawGenGround(g);
   for(const b of L.bld)bBack(b);
-  if(g.port){drawPier(g);drawPortDeco(g,false);}else if(g.gl){drawGenGround(g);drawPortDeco(g,false);}else{
+  if(g.port){drawPier(g);drawPortDeco(g,false);}else if(g.gl){drawPortDeco(g,false);}else{
   // street
   ctx.fillStyle='#6c6a66';ctx.fillRect(0,0,W,3);ctx.fillStyle='#4a4846';ctx.fillRect(0,3,W,2);ctx.fillStyle='#38373a';ctx.fillRect(0,5,W,420);
   const o=-((g.camX%40)+40)%40;ctx.fillStyle='#8a7a3a';for(let x=o;x<W;x+=40)ctx.fillRect(R(x),15,14,1);
@@ -1799,7 +1815,7 @@ function drawNightPart(p,x,wh,t){
       ctx.fillStyle='#14160f';ctx.fillRect(R(x+w*0.72),y-6,1,10);ctx.fillRect(R(x+w*0.72)-3,y-4,7,1);}
     return;}
 }
-function drawNightHUD(){const g=G;if(g.lv.bg!=='night'||g.mode==='boss'&&g.train)return;
+function drawNightHUD(){const g=G;if(g.lv.bg!=='night'||(g.mode==='boss'||g.mode==='intro')&&g.train)return;
   const ph=g.photos||0;ctx.fillStyle='rgba(16,20,12,.7)';ctx.fillRect(0,16,W,10);
   txt('ФОТО',3,23,5,'#8fd3ff');for(let i=0;i<3;i++){ctx.fillStyle=i<ph?'#8fd3ff':'#2b3a44';ctx.fillRect(26+i*9,19,7,5);}
   if(g.alarmT>0&&g.time%20<12)txt('ТРЕВОГА',W-3,23,6,'#ff6a4a','right',FD);else if(!g.alarms)txt('НЕ ЗАМЕЧЕН',W-3,23,5,'#9db36a','right');}
@@ -1855,7 +1871,7 @@ function drawBombWagon(p,x,wh,t){
   ctx.fillStyle=k;ctx.fillRect(x+w-10,by+1,8,3);ctx.fillRect(x+w-10,by+bh-4,8,3);ctx.fillRect(x+w-14,by+bh/2-1,10,2);
   const blink=(T&&T.risk>bombMax()*0.6)?8:30;if(!p.dead&&t%blink<blink/2){ctx.fillStyle='#ff3a2a';ctx.fillRect(R(bx+bw/2)-1,by-3,3,2);}
 }
-function drawBombHUD(){const g=G,T=g.train;if(!T||!T.bombT||!(g.mode==='boss'||g.mode==='approach'))return;
+function drawBombHUD(){const g=G,T=g.train;if(!T||!T.bombT||!(g.mode==='boss'||g.mode==='approach'||g.mode==='intro'))return;
   const v=Math.min(1,(T.risk||0)/bombMax());ctx.fillStyle='rgba(16,20,12,.7)';ctx.fillRect(0,27,W,9);
   txt('БОМБА',3,34,5,'#ffb36b');bar(32,29,70,5,v,v>0.6&&g.time%20<10?'#ff3a2a':'#e8b33a');txt('не стрелять по вагону с бомбой',106,34,5,'#c8c2a8');}
 /* background: hills, then the capital rises on the horizon */
@@ -1899,7 +1915,7 @@ function convoyRect(g){const c=g.convoy;return {x:c.x,y:baseY-20,w:convoyLen(),h
 function updEscortGlobal(){const g=G;if(!g.lv||!g.lv.escort)return;if(!g.convoy)initConvoy(g);const c=g.convoy;if(c.flash>0)c.flash--;
   const T=g.train,L=convoyLen();
   if(g.mode==='win'){c.go=Math.min(1.2,c.go+0.02);c.x+=c.go;}
-  else if(T&&T.roadblock&&(g.mode==='boss'||g.mode==='fail')){const stopX=T.x-L-18;if(c.x<stopX)c.x=Math.min(stopX,c.x+g.scroll+0.4);}
+  else if(T&&T.roadblock&&(g.mode==='boss'||g.mode==='fail'||g.mode==='intro')){const stopX=T.x-L-18;if(c.x<stopX)c.x=Math.min(stopX,c.x+g.scroll+0.4);}
   else c.x=g.camX+24;
   if(g.mode==='dead'||g.mode==='fail'||g.mode==='win')return;
   const r=convoyRect(g);
@@ -2047,6 +2063,10 @@ function drawGenBG(camX,camY){
   ctx.fillStyle='#0f1a10';ctx.fillRect(0,R(base)+4,W,GH);
 }
 function drawGenGround(g){
+  // the back half of the clearing: objects stand on it, not on a thin line
+  ctx.fillStyle='#2c3a1c';ctx.fillRect(0,-10,W,3);ctx.fillStyle='#4a5a2c';ctx.fillRect(0,-9,W,1);
+  ctx.fillStyle='#4a3e28';ctx.fillRect(0,-7,W,7);ctx.fillStyle='#3a3020';const ob=-((g.camX%17)+17)%17;for(let x=ob;x<W;x+=17){ctx.fillRect(R(x),-5,4,1);ctx.fillRect(R(x+9),-2,3,1);}
+  ctx.fillStyle='#4d6130';for(let x=ob;x<W;x+=17)if(hash(Math.floor((g.camX+x)/17)+40)>0.5){ctx.fillRect(R(x+3),-11,1,2);ctx.fillRect(R(x+5),-12,1,3);ctx.fillRect(R(x+7),-11,1,2);}
   ctx.fillStyle='#6a5a3a';ctx.fillRect(0,0,W,2);ctx.fillStyle='#4a3e28';ctx.fillRect(0,2,W,3);ctx.fillStyle='#2e2618';ctx.fillRect(0,5,W,420);
   const o=-((g.camX%23)+23)%23;ctx.fillStyle='#3a3020';for(let x=o;x<W;x+=23){ctx.fillRect(R(x),9,5,1);ctx.fillRect(R(x+11),14,3,1);}
   ctx.fillStyle='#4d6130';for(let x=o;x<W;x+=23)if(hash(Math.floor((g.camX+x)/23))>0.55){ctx.fillRect(R(x+4),-2,1,2);ctx.fillRect(R(x+6),-3,1,3);ctx.fillRect(R(x+8),-2,1,2);}
@@ -2463,13 +2483,25 @@ function drawGame(){
   drawHUD();drawNightHUD();drawBombHUD();drawEscortHUD();
   if(g.mode==='base'&&t%50<35)txtS('▲ ВВЕРХ — ВЗЛЁТ',W/2,GH*0.45,9,'#fbe48a','center',FD);
   if(g.hint>0)txtS('Пулемёт стреляет сам',W/2,GH*0.4,7,'#e8e2c8','center');
-  if(g.mode==='boss'&&g.bossT<150&&t%30<20)txtS(g.lv.target,W/2,GH*0.35,11,'#ff8a5a','center',FD);
+  if(g.mode==='intro')drawIntro(t);
+  if(g.mode==='boss'&&g.bossT<90&&t%30<20)txtS('В БОЙ!',W/2,GH*0.35,11,'#ff8a5a','center',FD);
   if(g.mode==='win'&&g.endT>110)txtS('МИССИЯ ВЫПОЛНЕНА',W/2,GH*0.38,13,'#fbe48a','center',FD);
   if((g.mode==='dead'&&g.endT>60)||(g.mode==='fail'&&g.endT>40))txtS('МИССИЯ ПРОВАЛЕНА',W/2,GH*0.38,13,'#ff6a4a','center',FD);
   if(g.msg)drawMsg(g.msg);
   drawControls();
   if(g.paused)drawPause();
 }
+function drawIntro(t){const g=G,T=g.train,k=g.introT,a=clamp(k/18,0,1)*clamp((INTRO_T-k)/14,0,1),bh=R(GH*0.13*a);
+  // target brackets around the boss
+  let x0=1e9,y0=1e9,x1=-1e9;for(const p of T.parts){if(p.bomb)continue;const r=partRect(p);const sx0=r.x-g.camX;if(sx0>W)continue;x0=Math.min(x0,sx0);x1=Math.max(x1,Math.min(W-4,sx0+r.w));y0=Math.min(y0,r.y);}
+  if(x0<1e9){const pad=R(10+(1-clamp(k/30,0,1))*30),L=8,y1=Math.min(groundY+2,GH-bh-3),bx0=Math.max(3,R(x0)-pad),bx1=Math.min(W-3,R(x1)+pad),by0=Math.max(bh+3,R(y0)-pad);ctx.fillStyle=t%16<10?'#ff6a4a':'#fbe48a';
+    for(const[cx,cy,dx,dy]of[[bx0,by0,1,1],[bx1,by0,-1,1],[bx0,y1,1,-1],[bx1,y1,-1,-1]]){ctx.fillRect(cx,cy,dx*L,2*dy||2);ctx.fillRect(cx,cy,2*dx||2,dy*L);}}
+  // letterbox + caption
+  ctx.fillStyle='#000';ctx.fillRect(0,0,W,bh);ctx.fillRect(0,GH-bh,W,bh);
+  if(k>14){const n=Math.min(g.lv.bossName.length,Math.floor((k-14)/2));txtS(g.lv.bossName.slice(0,n),W/2,GH*0.30,15,'#fbe48a','center',FD);}
+  if(k>40)txtS(g.lv.target,W/2,GH*0.30+16,8,'#ff8a5a','center',FD);
+  if(k>60)txt('Урон проходит только вблизи — держитесь рядом',W/2,GH-bh+9,5,'#e8e2c8','center');
+  if(k>45&&t%40<28)txt('ОГОНЬ — В БОЙ',W/2,GH-bh+19,5,'#9db36a','center');}
 function bar(x,y,w,h,v,col){ctx.fillStyle='#14160f';ctx.fillRect(x,y,w,h);ctx.fillStyle='#2b2f24';ctx.fillRect(x+1,y+1,w-2,h-2);ctx.fillStyle=col;ctx.fillRect(x+1,y+1,R((w-2)*clamp(v,0,1)),h-2);}
 function drawHUD(){
   const g=G,P=g.P;ctx.fillStyle='rgba(16,20,12,.78)';ctx.fillRect(0,0,W,15);ctx.fillStyle='#4d6130';ctx.fillRect(0,15,W,1);
@@ -2481,7 +2513,7 @@ function drawHUD(){
   x=113;ctx.save();ctx.translate(x,2);ctx.scale(0.8,0.8);ctx.drawImage(SPR.star.img,0,0);ctx.restore();txt(''+g.medals,x+11,9,7,'#e8e2c8');
   txt(String(g.score).padStart(6,'0'),W-25,10,8,'#fbe48a','right');
   ctx.fillStyle='#2b2f24';ctx.fillRect(W-20,2,17,11);ctx.fillStyle='#e8e2c8';ctx.fillRect(W-14,5,2,6);ctx.fillRect(W-10,5,2,6);
-  if(g.train&&(g.mode==='boss'||g.mode==='fail')){
+  if(g.train&&(g.mode==='boss'||g.mode==='fail'||g.mode==='intro')){
     ctx.fillStyle='rgba(16,20,12,.7)';ctx.fillRect(0,16,W,11);
     const loco=g.train.parts.find(p=>p.type==='loco');txt(g.lv.bossName,3,24,5,'#ff9a6a');bar(36,19,g.lv.noBorder?W-40:60,5,loco.hp/loco.max,'#d9572e');
     if(!g.lv.noBorder){const sec=Math.max(0,Math.ceil(g.border/60)),tot=DIFF[ST.diff].time;
@@ -2680,7 +2712,7 @@ function drawBrief(){
 function drawResult(){
   UI=[];let by2;const r=G.res;if(G.kind==='inf'||G.lv.bg==='city')drawCityStatic();else{drawBG(G.camX,ST.t);drawGround(G.camX);}if(PANEL){ctx.fillStyle='#1a2013';ctx.fillRect(0,GH,W,PANEL);}
   ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,W,H);
-  const hasNext=r.win&&ST.mission<NMIS-1,hasCp=!r.win&&G.cp,last=r.win&&ST.mission===NMIS-1,nrow=5+r.lines.length,ph=50+nrow*11+4+36+17+(hasCp||hasNext||last?22:0)+12;const pw=W-24,x=12,y=Math.max(8,R((H-ph)/2));panel(x,y,pw,ph);
+  const hasNext=r.win&&ST.mission<NMIS-1,hasCp=!r.win&&G.cp,last=r.win&&ST.mission===NMIS-1,share=r.win&&!!window.rejarShare,nrow=5+r.lines.length,ph=50+nrow*11+4+36+17+(hasCp||hasNext||last?22:0)+(share?20:0)+12;const pw=W-24,x=12,y=Math.max(8,R((H-ph)/2));panel(x,y,pw,ph);
   txt(r.win?'ОПЕРАЦИЯ ВЫПОЛНЕНА':'МИССИЯ ПРОВАЛЕНА',W/2,y+22,12,r.win?'#fbe48a':'#ff6a4a','center',FD);
   if(!r.win)txt(r.reason,W/2,y+34,7,'#e8e2c8','center');
   let yy=y+50;const row=(a,b,c)=>{txt(a,x+12,yy,7,'#c8c2a8');txt(''+b,x+pw-12,yy,7,c||'#e8e2c8','right');yy+=11;};
@@ -2694,6 +2726,7 @@ function drawResult(){
   else if(hasNext){button('СЛЕДУЮЩАЯ МИССИЯ',bx,by,bw,17,()=>{ST.mission++;ST.scene='brief';ST.tw=0;music('menu');},{size:7});by2=by+22;}else by2=by;
   button(r.win?'ЕЩЁ РАЗ':'ЗАНОВО',bx,by2,bw/2-3,17,()=>startMission(),{size:8});
   button('В МЕНЮ',bx+bw/2+3,by2,bw/2-3,17,()=>{ST.scene='title';ST.sel=0;music('menu');},{size:8});
+  if(share)button('ПОДЕЛИТЬСЯ В TELEGRAM',bx,by2+21,bw,15,()=>window.rejarShare('«Стальной Шершень», операция «'+NAMES[ST.mission]+'»: '+r.total+' очков, звание «'+r.rank+'» ('+DIFF[ST.diff].s.toLowerCase()+'). Сможешь лучше?'),{size:7});
 }
 
 /* ================= MAIN LOOP ================= */

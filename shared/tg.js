@@ -1,15 +1,20 @@
 /* Rejar Box — адаптер для Telegram Mini App.
  * Подключается после telegram-web-app.js. Вне Telegram ничего не делает.
  *   <script src="https://telegram.org/js/telegram-web-app.js"></script>
- *   <script src="shared/tg.js" data-back="../../"></script>   (data-back — куда ведёт кнопка «Назад»; без него кнопка скрыта)
+ *   <script src="shared/tg.js" data-back="../../" data-full="1"></script>
+ *   data-back — куда ведёт кнопка «Назад» (без него кнопка скрыта); data-full — игра во весь экран на телефоне.
  * Что делает в Telegram:
  *  - разворачивает окно, красит шапку в цвет Rejar Box, отключает закрытие свайпом вниз (мешает играть);
+ *  - игры на телефоне открываются во весь экран, с отступами под кнопки Telegram и вырез экрана;
+ *  - window.rejarShare(text) — поделиться результатом в чате (ссылка ведёт в бота, см. BOT);
  *  - кнопка «Назад» Telegram ведёт из игры в меню;
  *  - звук ставится на паузу, когда Telegram свёрнут;
  *  - рекорды и прогресс (ключи с префиксами из SYNC) копируются в облако Telegram (CloudStorage),
  *    поэтому на другом телефоне или в Telegram Desktop прогресс тот же.
  */
 (function () {
+  const BOT = '';            // юзернейм бота без @, например 'rejarbox_bot'. Пусто — делимся ссылкой на сайт.
+  const SITE = 'https://z0rd4n0v1ch.github.io/rejar-box/';
   const W = window.Telegram && window.Telegram.WebApp;
   const inTG = !!(W && W.initData);
   window.REJAR_TG = inTG ? W : null;
@@ -32,6 +37,30 @@
       else W.BackButton.hide();
     }
   } catch (e) {}
+
+  /* во весь экран: только игры и только на телефоне */
+  const full = me && me.dataset.full, mobile = /android|ios/.test(W.platform || '');
+  const st = document.createElement('style');
+  st.textContent = 'html.tg-full{padding:0!important}html.tg-full body{box-sizing:border-box;padding-top:var(--rj-top,0px);padding-bottom:var(--rj-bot,0px)}';
+  document.head.appendChild(st);
+  const pad = () => {
+    const fs = !!W.isFullscreen, a = W.safeAreaInset || {}, c = W.contentSafeAreaInset || {}, d = document.documentElement;
+    d.classList.toggle('tg-full', fs);
+    d.style.setProperty('--rj-top', (fs ? (a.top || 0) + (c.top || 0) : 0) + 'px');
+    d.style.setProperty('--rj-bot', (fs ? (a.bottom || 0) + (c.bottom || 0) : 0) + 'px');
+    setTimeout(() => dispatchEvent(new Event('resize')), 30);
+  };
+  try {
+    for (const ev of ['fullscreenChanged', 'safeAreaChanged', 'contentSafeAreaChanged', 'viewportChanged']) W.onEvent(ev, pad);
+    if (at('8.0')) { if (full && mobile && !W.isFullscreen) W.requestFullscreen(); else if (!full && W.isFullscreen) W.exitFullscreen(); }
+  } catch (e) {}
+  if (document.body) pad(); else addEventListener('DOMContentLoaded', pad);
+
+  /* поделиться результатом */
+  window.rejarShare = (text) => {
+    const url = BOT ? 'https://t.me/' + BOT + '?startapp' : SITE;
+    try { W.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text)); } catch (e) {}
+  };
 
   /* внешние ссылки — через Telegram, иначе они откроются внутри мини-приложения */
   document.addEventListener('click', (e) => {

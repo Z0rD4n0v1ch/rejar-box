@@ -1,6 +1,6 @@
 // Rejar Box — офлайн-кэш меню. Всегда сначала сеть (no-cache), кэш — только без интернета.
 // Игры кэшируют себя сами своими sw.js в своих папках. При изменении меню меняй VERSION.
-const VERSION='rejarbox-v11';
+const VERSION='rejarbox-v13';
 const FILES=['./','./index.html','./games/list.js','./manifest.webmanifest','./icon-192.png','./icon-512.png','./games/shershen/cover.png','./shared/tg.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith('rejarbox-')&&k!==VERSION).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
