@@ -57,7 +57,7 @@ Rejar Box открывается как Mini App в боте. Сайт тот ж
 добавь туда свой префикс.
 
 Игры с `data-full="1"` на телефоне открываются во весь экран. Кнопка «Поделиться» ведёт в бота, если в `shared/tg.js`
-записан его юзернейм (`BOT`), иначе — на сайт.
+записан его юзернейм (`BOT`, сейчас `rejarbox_app`), иначе — на сайт. Ссылка `t.me/rejarbox_app?startapp=<id игры>` сразу открывает нужную игру.
 
 Настройка бота в @BotFather: `/newbot` → `/mybots` → бот → Bot Settings → Configure Mini App →
 Enable Mini App → адрес `https://z0rd4n0v1ch.github.io/rejar-box/`; там же Menu Button → тот же адрес, текст «Играть».

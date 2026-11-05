@@ -13,7 +13,7 @@
  *    поэтому на другом телефоне или в Telegram Desktop прогресс тот же.
  */
 (function () {
-  const BOT = '';            // юзернейм бота без @, например 'rejarbox_bot'. Пусто — делимся ссылкой на сайт.
+  const BOT = 'rejarbox_app'; // юзернейм бота без @. Пусто — делимся ссылкой на сайт.
   const SITE = 'https://z0rd4n0v1ch.github.io/rejar-box/';
   const W = window.Telegram && window.Telegram.WebApp;
   const inTG = !!(W && W.initData);
@@ -58,9 +58,22 @@
 
   /* поделиться результатом */
   window.rejarShare = (text) => {
-    const url = BOT ? 'https://t.me/' + BOT + '?startapp' : SITE;
+    const m = location.pathname.match(/\/games\/([A-Za-z0-9_-]+)\//), id = m ? m[1] : '';
+    const url = BOT ? 'https://t.me/' + BOT + '?startapp' + (id ? '=' + id : '') : SITE + (id ? 'games/' + id + '/' : '');
     try { W.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text)); } catch (e) {}
   };
+
+  /* ссылка t.me/бот?startapp=<id игры> сразу открывает эту игру (один раз за запуск) */
+  try {
+    const sp = W.initDataUnsafe && W.initDataUnsafe.start_param;
+    if (!back && sp && /^[A-Za-z0-9_-]+$/.test(sp) && !sessionStorage.getItem('rejar:startDone')) {
+      sessionStorage.setItem('rejar:startDone', '1');
+      addEventListener('DOMContentLoaded', () => {
+        const g = (window.REJAR_GAMES || []).find((x) => x.id === sp && !x.hidden);
+        if (g) location.href = g.path;
+      });
+    }
+  } catch (e) {}
 
   /* внешние ссылки — через Telegram, иначе они откроются внутри мини-приложения */
   document.addEventListener('click', (e) => {
