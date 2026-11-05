@@ -17,6 +17,9 @@ if [ ! -d .git ]; then
   fi
 fi
 
+# Старая папка steel-hornet/ больше не нужна: удаляем, если осталась после распаковки архива поверх папки
+if [ -d steel-hornet ]; then rm -rf steel-hornet; echo "== Удалена устаревшая папка steel-hornet/"; fi
+
 git config core.autocrlf false
 git add -A
 if git diff --cached --quiet; then
@@ -38,5 +41,5 @@ fi
 echo
 echo "== Готово!"
 echo "   Витрина:  https://z0rd4n0v1ch.github.io/rejar-box/"
-echo "   Игра:     https://z0rd4n0v1ch.github.io/rejar-box/steel-hornet/"
+echo "   Шершень:  https://z0rd4n0v1ch.github.io/rejar-box/games/shershen/"
 echo "   (если ссылки не открываются — включи Pages: Settings → Pages → Branch: main, папка / (root) → Save)"

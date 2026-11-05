@@ -10,7 +10,7 @@
 
 | Игра | Что это | Адрес |
 |---|---|---|
-| **Стальной Шершень** | шутер: вертолёт и пехота, 7 миссий, 3 сложности | [games/shershen/](games/shershen/) |
+| **Стальной Шершень** | шутер: вертолёт и пехота, 11 миссий, 3 сложности, финал кампании | [games/shershen/](games/shershen/) |
 
 ## Структура
 
@@ -22,9 +22,9 @@ games/template/       образец новой игры (скрыт в меню
 games/shershen/       «Стальной Шершень» — игра одним файлом index.html
   cover.png           картинка для карточки
   sw.js               офлайн-кэш только этой папки
-steel-hornet/         старый адрес, перенаправляет на games/shershen/
 manifest.webmanifest, sw.js, icon-*.png   установка меню на телефон, офлайн-кэш меню
 originals/            оригинальные .jar для изучения (в репозиторий не попадают)
+shared/tg.js          адаптер Telegram Mini App (шапка, «Назад», пауза звука, облачные сохранения)
 sync.sh               отправка на GitHub
 ```
 
@@ -48,3 +48,13 @@ Chrome → ⋮ → «Установить приложение» на стран
 ## Публикация
 
 После любых изменений: `./sync.sh` в Git Bash.
+
+## Telegram
+
+Rejar Box открывается как Mini App в боте. Сайт тот же (GitHub Pages), бот только открывает его.
+Каждая страница подключает `telegram-web-app.js` и `shared/tg.js`; вне Telegram адаптер ничего не делает.
+Прогресс игр (ключи с префиксами из `SYNC` в `shared/tg.js`) хранится и в облаке Telegram — новой игре
+добавь туда свой префикс.
+
+Настройка бота в @BotFather: `/newbot` → `/mybots` → бот → Bot Settings → Configure Mini App →
+Enable Mini App → адрес `https://z0rd4n0v1ch.github.io/rejar-box/`; там же Menu Button → тот же адрес, текст «Играть».
