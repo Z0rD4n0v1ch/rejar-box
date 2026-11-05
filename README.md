@@ -10,7 +10,7 @@
 
 | Игра | Что это | Адрес |
 |---|---|---|
-| **Стальной Шершень** | шутер: вертолёт и пехота, 11 миссий, 3 сложности, финал кампании | [games/shershen/](games/shershen/) |
+| **Борт 11** | шутер: вертолёт и пехота, 11 миссий, 3 сложности, финал кампании | [games/shershen/](games/shershen/) |
 
 ## Структура
 
@@ -19,7 +19,7 @@ index.html            меню-полка с картриджами (строи�
 games/list.js         список игр: id, title, note, tags, cover, path, hidden, color, progress
 shared/engine.js      общий движок для новых игр
 games/template/       образец новой игры (скрыт в меню: hidden: true)
-games/shershen/       «Стальной Шершень» — игра одним файлом index.html
+games/shershen/       «Борт 11» — игра одним файлом index.html (папка осталась со старым именем)
   cover.png           картинка для карточки
   sw.js               офлайн-кэш только этой папки
 manifest.webmanifest, sw.js, icon-*.png   установка меню на телефон, офлайн-кэш меню

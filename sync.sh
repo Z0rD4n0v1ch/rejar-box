@@ -41,5 +41,5 @@ fi
 echo
 echo "== Готово!"
 echo "   Витрина:  https://z0rd4n0v1ch.github.io/rejar-box/"
-echo "   Шершень:  https://z0rd4n0v1ch.github.io/rejar-box/games/shershen/"
+echo "   Борт 11:  https://z0rd4n0v1ch.github.io/rejar-box/games/shershen/"
 echo "   (если ссылки не открываются — включи Pages: Settings → Pages → Branch: main, папка / (root) → Save)"

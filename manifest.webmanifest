@@ -14,6 +14,6 @@
     {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
   ],
   "shortcuts": [
-    {"name": "Стальной Шершень", "url": "games/shershen/", "icons": [{"src": "games/shershen/icon-192.png", "sizes": "192x192"}]}
+    {"name": "Борт 11", "url": "games/shershen/", "icons": [{"src": "games/shershen/icon-192.png", "sizes": "192x192"}]}
   ]
 }
