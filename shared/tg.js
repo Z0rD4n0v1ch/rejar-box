@@ -95,7 +95,7 @@
   document.addEventListener('visibilitychange', () => pause(document.hidden));
 
   /* облачные сохранения */
-  const SYNC = ['hornet_'];
+  const SYNC = ['hornet_', 'petlya_'];
   const CS = at('6.9') && W.CloudStorage;
   if (!CS) return;
   const ok = (k) => SYNC.some((p) => k.startsWith(p)) && /^[A-Za-z0-9_-]{1,128}$/.test(k);
@@ -109,6 +109,8 @@
     // списки (достижения) — объединяем; объекты (улучшения, статистика) — по каждому полю берём большее
     if (Array.isArray(a) && Array.isArray(b)) return JSON.stringify([...new Set([...a, ...b])]);
     if (a && b && typeof a === 'object' && typeof b === 'object') {
+      // сохранение игры целиком (есть номер этапа st): берём более продвинутое, не смешивая
+      if (typeof a.st === 'number' && typeof b.st === 'number') return (a.st > b.st || (a.st === b.st && (a.day || 0) >= (b.day || 0))) ? local : cloud;
       const o = Object.assign({}, b, a);
       for (const k in b) if (typeof a[k] === 'number' && typeof b[k] === 'number') o[k] = Math.max(a[k], b[k]);
       return JSON.stringify(o);
