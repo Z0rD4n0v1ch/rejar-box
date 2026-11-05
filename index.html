@@ -275,7 +275,7 @@
         '<div class="src">По мотивам: <b>' + esc(o.title) + '</b>' + [o.by, o.year, o.platform].filter(Boolean).map((x) => ' · ' + esc(String(x))).join('') + '</div>' +
         (g.kept && g.kept.length ? '<h4>Что взято из оригинала</h4>' + li(g.kept) : '') +
         (g.changed && g.changed.length ? '<h4>Что в ремейке по-своему</h4>' + li(g.changed) : '') +
-        '<div class="note">Rejar Box — фанатский ремейк. Он не связан с авторами и правообладателями оригинала; их названия упомянуты только как источник идеи.</div></details>';
+        '<div class="note">«' + esc(g.title) + '» — фанатский ремейк. Он не связан с авторами и правообладателями оригинала; их названия упомянуты только как источник идеи.</div></details>';
     }
     function launch(i) { jingle(); const h = hrefOf(games[i]); setTimeout(() => { location.href = h; }, AU.on && AU.ctx ? 260 : 0); }
 
