@@ -82,7 +82,8 @@
     .tags { font-size: 12px; color: var(--green); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
     .prog { margin: 0 0 14px; font-size: 13px; }
     .prog .bar { display: flex; gap: 4px; margin: 4px 0 6px; }
-    .prog .bar i { flex: 0 0 18px; height: 7px; background: #2c3820; }
+    .prog .bar i { flex: 1 1 0; min-width: 2px; max-width: 18px; height: 7px; background: #2c3820; }
+    .prog .bar.many { gap: 1px; }
     .prog .bar i.on { background: #9fe07a; }
     .prog .row2 { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed #2c3820; }
     .prog b { font-weight: 400; color: var(--yellow); font-variant-numeric: tabular-nums; }
@@ -256,7 +257,7 @@
       let prog = '';
       if (P && P.total) {
         prog = '<div class="prog"><div class="row2"><span>' + esc(P.label || 'Пройдено') + '</span><b>' + P.done + ' / ' + P.total + '</b></div>' +
-          '<div class="bar" aria-hidden="true">' + Array.from({ length: P.total }, (_, k) => '<i class="' + (k < P.done ? 'on' : '') + '"></i>').join('') + '</div>' +
+          '<div class="bar' + (P.total > 20 ? ' many' : '') + '" aria-hidden="true">' + Array.from({ length: P.total }, (_, k) => '<i class="' + (k < P.done ? 'on' : '') + '"></i>').join('') + '</div>' +
           (P.best ? '<div class="row2"><span>Лучший счёт</span><b>' + Number(P.best).toLocaleString('ru-RU') + '</b></div>' : '') + '</div>';
       }
       detail.innerHTML =

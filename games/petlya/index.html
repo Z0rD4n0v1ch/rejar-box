@@ -45,7 +45,7 @@ const ART={"ch_nick": {"src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALA
 /* ================= ЭКРАН ================= */
 function layout(){
   DPR=Math.min(window.devicePixelRatio||1,3);
-  const vw=innerWidth,vh=innerHeight;cv.width=Math.round(vw*DPR);cv.height=Math.round(vh*DPR);
+  const vw=cv.clientWidth||innerWidth,vh=cv.clientHeight||innerHeight;cv.width=Math.round(vw*DPR);cv.height=Math.round(vh*DPR);
   portrait=vh>=vw;
   SC=Math.min(vw/240,vh/(portrait?320:270));
   W=Math.floor(Math.min(portrait?300:440,vw/SC));H=Math.floor(Math.min(560,vh/SC));
@@ -93,10 +93,9 @@ function readInput(){
 }
 function toLogical(e){const r=cv.getBoundingClientRect();return {x:(e.clientX-r.left-OX)/SC,y:(e.clientY-r.top-OY)/SC};}
 let lastTouch=0;
-cv.addEventListener('pointerdown',e=>{
-  e.preventDefault();auInit();try{cv.setPointerCapture(e.pointerId);}catch(_){}
-  if(e.pointerType==='touch')lastTouch=Date.now();ST.kbd=false;
-  const p=toLogical(e);
+function pressAt(id,cx,cy,touch){
+  auInit();if(touch)lastTouch=Date.now();ST.kbd=false;
+  const p=toLogical({clientX:cx,clientY:cy});const e={pointerId:id};
   if(ST.scene==='play'&&!ST.modal){
     const c=ctlGeom();
     if(Math.hypot(p.x-c.menu.x,p.y-c.menu.y)<c.menu.r+6){menuQ=true;return;}
@@ -107,10 +106,17 @@ cv.addEventListener('pointerdown',e=>{
   }
   for(let i=UI.length-1;i>=0;i--){const b=UI[i];if(p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h){sfx('ui');b.act();return;}}
   actQ=true;touches.set(e.pointerId,{role:'act',x:p.x,y:p.y});
-},{passive:false});
-cv.addEventListener('pointermove',e=>{const t=touches.get(e.pointerId);if(!t)return;const p=toLogical(e);t.x=p.x;t.y=p.y;});
-const endT=e=>touches.delete(e.pointerId);
-cv.addEventListener('pointerup',endT);cv.addEventListener('pointercancel',endT);cv.addEventListener('lostpointercapture',endT);
+}
+function moveTo(id,cx,cy){const t=touches.get(id);if(!t)return;const p=toLogical({clientX:cx,clientY:cy});t.x=p.x;t.y=p.y;}
+/* мышь и перо — через pointer-события; палец — через touch-события (в Telegram на Android pointermove от пальца приходит ненадёжно) */
+cv.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;e.preventDefault();try{cv.setPointerCapture(e.pointerId);}catch(_){}pressAt('p'+e.pointerId,e.clientX,e.clientY,false);},{passive:false});
+cv.addEventListener('pointermove',e=>{if(e.pointerType!=='touch')moveTo('p'+e.pointerId,e.clientX,e.clientY);});
+const endP=e=>{if(e.pointerType!=='touch')touches.delete('p'+e.pointerId);};
+cv.addEventListener('pointerup',endP);cv.addEventListener('pointercancel',endP);cv.addEventListener('lostpointercapture',endP);
+cv.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches)pressAt('t'+t.identifier,t.clientX,t.clientY,true);},{passive:false});
+cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches)moveTo('t'+t.identifier,t.clientX,t.clientY);},{passive:false});
+const endTouch=e=>{e.preventDefault();for(const t of e.changedTouches)touches.delete('t'+t.identifier);};
+cv.addEventListener('touchend',endTouch,{passive:false});cv.addEventListener('touchcancel',endTouch,{passive:false});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('keydown',e=>{
   auInit();ST.kbd=true;
@@ -1759,7 +1765,7 @@ function drawTitle(){UI=[];const t=G.t;
   else{button(tl('НАЧАТЬ ИГРУ'),x,y,w,22,()=>{auInit();startGame(true);},{hot:1,size:9});y+=28;}
   button(tl('ЗВУК: ')+(AU.on?tl('ВКЛ'):tl('ВЫКЛ')),x,y,w,18,()=>{auInit();setSound(!AU.on);});y+=24;
   button(tl('ВСЕ ИГРЫ REJAR BOX'),x,y,w,18,()=>{location.href='../../';});
-  txt(tl('Прототип · глава 1'),W/2,H-8,6,'rgba(255,240,210,.6)','center');
+  txt(tl('Акт 1 из 2 · акт 2 в работе'),W/2,H-8,6,'rgba(255,240,210,.6)','center');
   if(ST.confirm)drawConfirm();
 }
 function openChoiceTitle(){ST.confirm=1;ST.sel=0;}
