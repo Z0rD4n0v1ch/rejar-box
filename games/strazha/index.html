@@ -110,21 +110,23 @@ addEventListener('keydown',e=>{if(e.repeat)return;K[e.code]=1;kbd=true;auInit();
 addEventListener('keyup',e=>{K[e.code]=0;});
 function toLogical(cx,cy){const r=cv.getBoundingClientRect();return {x:(cx-r.left-OX)/SC,y:(cy-r.top-OY)/SC};}
 function padLayout(){const s=CFG.big?1.2:1;const by=H-10;
-  return {dpad:{x:48*s,y:by-44*s,r:36*s},
-    btn:[{k:'j',x:W-32*s,y:by-58*s,r:19*s,l:'ПРЫЖОК'},{k:'a',x:W-74*s,y:by-30*s,r:19*s,l:'УДАР'},
-      {k:'b',x:W-32*s,y:by-16*s,r:14*s,l:'БЛОК'},{k:'v',x:W-80*s,y:by-74*s,r:13*s,l:'ЧУТЬЁ'}]};}
+  return {dpad:{x:50*s,y:by-46*s,r:34*s},
+    btn:[{k:'j',x:W-34*s,y:by-34*s,r:23*s,l:'ПРЫЖОК'},{k:'a',x:W-86*s,y:by-24*s,r:21*s,l:'УДАР'},
+      {k:'b',x:W-30*s,y:by-88*s,r:15*s,l:'БЛОК'},{k:'v',x:W-78*s,y:by-78*s,r:13*s,l:'ЧУТЬЁ'}]};}
+function padTouch(){for(const id in TOUCH){const t=TOUCH[id];if(t.pad)return t;}return null;}
 function touchKeys(){const o={l:0,r:0,u:0,d:0,j:0,a:0,b:0,v:0};if(ST.scene!=='game'||ST.modal)return o;const Lp=padLayout();
   for(const id in TOUCH){const t=TOUCH[id];if(t.ui)continue;
-    const dx=t.x-Lp.dpad.x,dy=t.y-Lp.dpad.y;
-    if(t.pad||(Math.hypot(dx,dy)<Lp.dpad.r*1.6&&t.x<W/2)){t.pad=1;const a=Math.atan2(dy,dx),dd=Math.hypot(dx,dy);if(dd<7)continue;
-      const c=Math.cos(a),s=Math.sin(a);if(c>0.38)o.r=1;if(c<-0.38)o.l=1;if(s<-0.45)o.u=1;if(s>0.45)o.d=1;continue;}
+    if(!t.pad&&!t.btn&&(t.sx??t.x)<W*0.45&&(t.sy??t.y)>H*0.3){t.pad=1;t.ox=t.sx??t.x;t.oy=t.sy??t.y;}
+    if(t.pad){let dx=t.x-t.ox,dy=t.y-t.oy,dd=Math.hypot(dx,dy);const r=Lp.dpad.r;
+      if(dd>r){t.ox=t.x-dx/dd*r;t.oy=t.y-dy/dd*r;dx=t.x-t.ox;dy=t.y-t.oy;dd=r;}// крестовина едет за пальцем
+      if(dd<8)continue;const c=dx/dd,s=dy/dd;if(c>0.42)o.r=1;if(c<-0.42)o.l=1;if(s<-0.62)o.u=1;if(s>0.62)o.d=1;continue;}
     let best=null,bd=1e9;for(const b of Lp.btn){const d=Math.hypot(t.x-b.x,t.y-b.y);if(d<b.r*1.4&&d<bd){bd=d;best=b;}}
-    if(best)o[best.k]=1;}
+    if(best){o[best.k]=1;t.btn=1;}}
   return o;}
 function hitUI(p){for(let i=UI.length-1;i>=0;i--){const u=UI[i];if(p.x>=u.x&&p.x<=u.x+u.w&&p.y>=u.y&&p.y<=u.y+u.h){u.fn();return true;}}return false;}
 cv.addEventListener('touchstart',e=>{e.preventDefault();auInit();kbd=false;for(const t of e.changedTouches){const p=toLogical(t.clientX,t.clientY);
   if(ST.dlg){dlgNext();TOUCH[t.identifier]={...p,ui:1};continue;}
-  const ui=hitUI(p);TOUCH[t.identifier]={...p,ui:ui?1:0};}},{passive:false});
+  const ui=hitUI(p);TOUCH[t.identifier]={...p,sx:p.x,sy:p.y,ui:ui?1:0};}},{passive:false});
 cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches){const o=TOUCH[t.identifier];if(!o)continue;const p=toLogical(t.clientX,t.clientY);o.x=p.x;o.y=p.y;}},{passive:false});
 const tEnd=e=>{e.preventDefault();for(const t of e.changedTouches)delete TOUCH[t.identifier];};
 cv.addEventListener('touchend',tEnd,{passive:false});cv.addEventListener('touchcancel',tEnd,{passive:false});
@@ -265,7 +267,7 @@ function dialog(lines,done,o){ST.dlg={lines,i:0,ch:0,done,...(o||{})};}
 function cutscene(lines,done,o){ST.dlg={lines:lines.map(s=>['narr',s]),i:0,ch:0,done,cut:1,...(o||{})};}
 function dlgNext(){const d=ST.dlg;if(!d)return;const s=tl(d.lines[d.i][1]);if(d.ch<s.length){d.ch=s.length;return;}
   d.i++;d.ch=0;if(d.i>=d.lines.length){ST.dlg=null;d.done&&d.done();}}
-function hint(s){ST.hint=s;ST.hintT=480;}
+function hint(s){ST.hint=s;ST.hintT=420;}
 let toastObj=0;function setObj(s){ST.obj=s;if(s)toastObj=180;}
 let toastS=null,toastT=0;function toastTxt(s){toastS=s;toastT=80;}
 
@@ -288,7 +290,8 @@ function softBelow(x,y){let best=null,bd=1e9;for(const s of L.softs){if(s.y<y)co
     let ok=true;const tx=Math.floor(s.x/TS);for(let ty=Math.floor(y/TS)+1;ty<Math.floor((s.y-1)/TS);ty++)if(isTop(tx,ty)){ok=false;break;}if(ok){bd=d;best=s;}}}return best;}
 
 /* ================= ИГРОК ================= */
-function damage(n,fromX){if(P.inv>0||P.st==='dead'||P.roll>0)return;P.hp-=n;P.inv=60;P.hurt=16;sfx('hurt');G.shake=8;
+function buzz(ms){if(!kbd&&navigator.vibrate)try{navigator.vibrate(ms)}catch(e){}}
+function damage(n,fromX){if(!(P.inv>0||P.st==='dead'||P.roll>0))buzz(60);if(P.inv>0||P.st==='dead'||P.roll>0)return;P.hp-=n;P.inv=60;P.hurt=16;sfx('hurt');G.shake=8;
   P.vx=sgn(P.x-(fromX==null?P.x-P.face:fromX))*2.2;if(['hang','climb','swing','zip','pull'].includes(P.st)){P.st='air';P.hang=null;P.noGrab=20;P.fallY=P.y;}
   if(P.hp<=0)die();}
 function die(){if(P.st==='dead')return;P.st='dead';P.hp=0;G.deadT=1;sfx('kill');G.shake=10;}
@@ -319,15 +322,15 @@ function updClimb(dir){const p=P;p.climbT=(p.climbT||0)+1;
     if(dir&&p.cm.k!=='wall'){p.st='air';p.vx=dir*2.0;p.vy=-3.9;p.face=dir;p.cj=16;p.fallY=p.y;sfx('jump');return;}
     p.st='air';p.vy=-4.7;p.vx=0;p.cj=18;p.fallY=p.y;sfx('jump');return;}// прыжок вверх по стене
   let moved=false;
-  if(IN.u){const ny=p.y-0.95;if(canStay(p.x,ny)&&!boxHit(p.x,ny,PW,22,isSolid)){p.y=ny;moved=true;}else{const t=climbTop();if(t){p.hang=t;p.st='pull';p.pull=14;sfx('grab');return;}}}
-  else if(IN.d){const ny=p.y+1.3;if(onGround(p,PW)){p.st='stand';p.cm=null;return;}
-    if(canStay(p.x,ny)){const lt=moveY(p,1.3,PW,22,false);moved=true;if(lt){p.st='stand';p.cm=null;return;}}else{p.st='air';p.fallY=p.y;p.noGrab=12;return;}}
-  if(dir&&p.cm.k!=='wall'&&p.cm.k!=='pipe'){const nx=p.x+dir*0.85;if(canStay(nx,p.y)&&!boxHit(nx,p.y,PW,22,isSolid)){p.x=nx;moved=true;}p.face=dir;}
+  if(IN.u){const ny=p.y-1.3;if(canStay(p.x,ny)&&!boxHit(p.x,ny,PW,22,isSolid)){p.y=ny;moved=true;}else{const t=climbTop();if(t){p.hang=t;p.st='pull';p.pull=14;sfx('grab');return;}}}
+  else if(IN.d){const ny=p.y+1.7;if(onGround(p,PW)){p.st='stand';p.cm=null;return;}
+    if(canStay(p.x,ny)){const lt=moveY(p,1.7,PW,22,false);moved=true;if(lt){p.st='stand';p.cm=null;return;}}else{p.st='air';p.fallY=p.y;p.noGrab=12;return;}}
+  if(dir&&p.cm.k!=='wall'&&p.cm.k!=='pipe'){const nx=p.x+dir*1.1;if(canStay(nx,p.y)&&!boxHit(nx,p.y,PW,22,isSolid)){p.x=nx;moved=true;}p.face=dir;}
   else if(dir&&p.cm.k==='pipe'){const nx=p.x+dir*0.85;if(climbCell(Math.floor(nx/TS),Math.floor((p.y-12)/TS))){p.cm.k='face';p.x=nx;}p.face=dir;}
   if(moved)p.climb++;}
 function landCheck(){const fell=(P.y-P.fallY)/TS;const soft=hideAt(P.x,P.y);
   if(soft){if(fell>3){fx('snow',P.x,P.y-6);sfx('land');if(fell>5)toastTxt('Прыжок веры!');}return;}
-  if(fell>11)die();else if(fell>6.5)damage(Math.ceil((fell-6.5)/1.6),P.x);else if(fell>2.5){sfx('land');P.land=8;}}
+  if(fell>13)die();else if(fell>8)damage(Math.ceil((fell-8)/2),P.x);else if(fell>2.5){sfx('land');P.land=8;}}
 function updPlayer(){const p=P;p.anim++;if(p.inv>0)p.inv--;if(p.hurt>0)p.hurt--;if(p.noGrab>0)p.noGrab--;if(p.ctr>0)p.ctr--;if(p.kill>0)p.kill--;if(p.cj>0)p.cj--;if(p.land>0)p.land--;if(p.comboT>0)p.comboT--;
   if(p.st==='dead'){p.vy=Math.min(p.vy+0.35,7);moveY(p,p.vy,PW,8);return;}
   if(p.st==='sync'||p.st==='tackle')return;
@@ -350,9 +353,10 @@ function updPlayer(){const p=P;p.anim++;if(p.inv>0)p.inv--;if(p.hurt>0)p.hurt--;
   // перекат
   if(p.roll>0){p.roll--;moveX(p,p.vx,PW,14);p.vy=Math.min(p.vy+0.35,7);const ld=moveY(p,p.vy,PW,14);if(ld)p.vy=0;if(p.roll===0){p.st='stand';if(boxHit(p.x,p.y,PW,22,isSolid))p.crouch=1;}return;}
   const grounded=onGround(p,PW);
-  if(grounded)p.coyote=6;else if(p.coyote>0)p.coyote--;
+  if(grounded)p.coyote=9;else if(p.coyote>0)p.coyote--;
   // начать лазание
-  if(p.atk===0&&p.noGrab===0&&(IN.uP||(IN.u&&(grounded||p.vy>-1.5))||(p.cj>0&&!grounded))&&!crowdAt(p.x,p.y)){if(startClimb())return;}
+  p.upT=IN.u?(p.upT||0)+1:0;
+  if(p.atk===0&&p.noGrab===0&&(IN.uP||(IN.u&&grounded&&p.upT>6)||(IN.u&&!grounded&&p.vy>-1.5)||(p.cj>0&&!grounded))&&!crowdAt(p.x,p.y)){if(startClimb())return;}
   if(p.atk===0&&!grounded&&p.noGrab===0&&dir&&p.vy>-1.2&&wallSide(dir)!=null){if(tryGrab(dir))return;if(startClimb())return;}
   if(p.atk===0&&grounded&&IN.dP&&isOne(Math.floor(p.x/TS),Math.floor((p.y+1)/TS))){const bt=Math.floor((p.y+1)/TS);if(climbCell(Math.floor(p.x/TS),bt+1)){p.y+=18;p.st='climb';p.cm={k:'face'};return;}}
   // перекат: БЛОК + направление
@@ -371,8 +375,10 @@ function updPlayer(){const p=P;p.anim++;if(p.inv>0)p.inv--;if(p.hurt>0)p.hurt--;
   if(wantC)p.crouch=1;else if(p.crouch){p.crouch=0;if(boxHit(p.x,p.y,PW,22,isSolid))p.crouch=1;}
   const cr=crowdAt(p.x,p.y);p.blend=cr&&grounded&&!p.crouch?1:0;
   let sp=p.crouch?0.65:p.blk?0:p.blend?0.75:1.85;if(p.atk>0&&grounded)sp=p.atkN===3?0.6:0.3;
-  if(p.hurt>0){p.vx*=0.9;}else{const target=dir*sp;p.vx+=(target-p.vx)*(grounded?0.3:0.1);if(dir&&p.atk===0&&!p.blk)p.face=dir;}
+  if(p.hurt>0){p.vx*=0.9;}else{const target=dir*sp;p.vx+=(target-p.vx)*(grounded?0.3:0.16);if(dir&&p.atk===0&&!p.blk)p.face=dir;}
   if(p.atk>0&&p.atkN===3&&grounded)p.vx=p.face*0.9;
+  if(grounded&&dir&&Math.abs(p.vx)>1.3&&!p.crouch&&p.atk===0){const fx2=Math.floor((p.x+dir*(PW/2+3))/TS),fy=Math.floor((p.y-1)/TS);
+    if(isSolid(fx2,fy)&&!isSolid(fx2,fy-1)&&!isTop(fx2,fy-1)&&!isSolid(Math.floor(p.x/TS),fy-2)){p.vy=-4.3;p.st='air';p.fallY=p.y;p.coyote=0;sfx('jump');p.vault=10;}}
   moveX(p,p.vx,PW,PH());
   if(p.jbuf&&(grounded||p.coyote>0)&&!p.crouch&&p.atk<8){p.vy=-5.8;p.coyote=0;p.jbuf=0;p.st='air';p.fallY=p.y;sfx('jump');
     if(Math.abs(p.vx)>1.4&&wallSide(p.face)!=null){p.vy=-6.6;}}
@@ -391,7 +397,7 @@ function updPlayer(){const p=P;p.anim++;if(p.inv>0)p.inv--;if(p.hurt>0)p.hurt--;
   p.hidden=hk||p.blend&&p.atk===0?1:0;p.hideK=hk||(p.blend?'crowd':'');
   if(p.y>L.h*TS+40)die();}
 function grabPole(){if(P.noGrab>0)return;const hx=P.x,hy=P.y-21;const tx=Math.floor(hx/TS),ty=Math.floor(hy/TS);
-  for(let yy=ty-1;yy<=ty+1;yy++)for(let xx=tx-1;xx<=tx+1;xx++)if(tile(xx,yy)==='o'){const cx=xx*TS+8,cy=yy*TS+8;if(Math.abs(hx-cx)<10&&Math.abs(hy-cy)<9){
+  for(let yy=ty-1;yy<=ty+1;yy++)for(let xx=tx-1;xx<=tx+1;xx++)if(tile(xx,yy)==='o'){const cx=xx*TS+8,cy=yy*TS+8;if(Math.abs(hx-cx)<14&&Math.abs(hy-cy)<12){
     P.st='swing';const f=sgn(P.vx)||P.face;P.sw={x:cx,y:cy,t:Math.PI/0.11*0.0,a:0,f};P.sw.t=0;P.vx=0;P.vy=0;P.face=f;sfx('grab');return;}}}
 function grabWire(){if(P.noGrab>0||P.vy<-1)return;for(const w of L.wires){const hx=P.x,hy=P.y-22;const t=(hx-w.x1)/(w.x2-w.x1);if(t<0||t>0.9)continue;
   const wy=lerp(w.y1,w.y2,t);if(Math.abs(hy-wy)<7){P.st='zip';P.zw=w;P.zt=t;P.vx=0;P.vy=0;sfx('grab');return;}}}
@@ -413,7 +419,7 @@ function airKill(){if(P.vy<1.5)return;for(const e of L.enemies){if(e.dead||e.k==
 function finisher(e,how){e.dead=1;e.dt=0;e.st='dead';e.how=how;e.dface=sgn(P.x-e.x)||1;if(G.tok===e)G.tok=null;G.kills++;
   const silent=(how==='back'||how==='hide'||how==='air')&&WPN[P.wpn]!=='knife';
   if(silent)G.silent++;else for(const o of L.enemies)if(!o.dead&&o!==e&&Math.abs(o.x-e.x)<90&&Math.abs(o.y-e.y)<30&&o.st!=='alert')o.meter=Math.min(1,o.meter+0.6);
-  P.kill=24;G.slow=how==='fight'?0:22;sfx(silent?'blade':'kill');fx('blood',e.x,e.y-13);G.shake=5;
+  P.kill=24;G.slow=how==='fight'?0:22;buzz(how==='fight'?20:35);sfx(silent?'blade':'kill');fx('blood',e.x,e.y-13);G.shake=5;
   toastTxt({air:'Удар сверху!',counter:'Контрудар!',back:silent?'Тихий удар':'Удар в спину',hide:'Удар из укрытия',fight:''}[how]||'');}
 
 /* ================= ВРАГИ ================= */
@@ -525,7 +531,7 @@ function fx(k,x,y,o){G.fx.push({k,x,y,t:0,...(o||{})});if(k==='blood'||k==='snow
 function updFx(){for(const f of G.fx){f.t++;if(f.k==='pt'){f.x+=f.vx;f.y+=f.vy;f.vy+=0.15;}}G.fx=G.fx.filter(f=>f.k==='pt'?f.t<f.life:f.t<(f.k==='tracer'?8:f.k==='flash'?6:20));
   for(const s of G.snow){s.y+=s.s*0.7;s.x+=Math.sin(G.t*0.01+s.d)*0.35-0.2;if(s.y>H+5){s.y=-5;s.x=Math.random()*W;}if(s.x<-5)s.x=W+5;}}
 function camTarget(){const zk=G.zoomK;const vw=VW/zk,vh=VH/zk;const look=P.st==='climb'?0:P.face*vw*0.12;
-  return {x:clamp(P.x-vw/2+look,0,L.w*TS-vw),y:clamp(P.y-vh*(portrait?0.48:0.58),-70,L.h*TS-vh+(portrait?100/Z:20))};}
+  return {x:clamp(P.x-vw/2+look,0,L.w*TS-vw),y:clamp(P.y-vh*(portrait?0.42:0.58)-(P.st==='climb'&&IN.u?vh*0.12:0),-70,L.h*TS-vh+(portrait?100/Z:20))};}
 function camSnap(){G.zoomK=1;const c=camTarget();G.camX=c.x;G.camY=c.y;}
 function updCam(){const zt=G.slow>0?1.18:G.syncT>0?0.8:1;G.zoomK+=(zt-G.zoomK)*0.08;const c=camTarget();G.camX+=(c.x-G.camX)*0.12;G.camY+=(c.y-G.camY)*0.1;}
 
@@ -766,15 +772,22 @@ function drawHUD(){// здоровье — сегменты
   ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(W-24,4,20,18);ctx.fillStyle='#eee';ctx.fillRect(W-18,8,3,10);ctx.fillRect(W-12,8,3,10);UI.push({x:W-30,y:0,w:30,h:28,fn:togglePause});
   let objH=0;if(ST.obj){const lines=wrap(ST.obj,W-50,7);objH=lines.length*9;lines.forEach((l,i)=>txtS(l,6,40+i*9,7,toastObj>0&&(toastObj>>4)%2?'#fff':'#e8d8a8','left'));}
   if(toastObj>0)toastObj--;
+  // маркер «куда идти»: следующая контрольная точка или арка
+  if(!(G.tgt&&G.tgt.run)&&!G.done){let wp=null;if(G.flags.escape)wp={x:202*TS,y:L.GR*TS};else if(G.cp+1<L.cps.length)wp=L.cps[G.cp+1];
+    if(wp&&!(G.tgt&&G.tgt.caught&&!G.flags.escape)){const sx=(wp.x-G.camX)*Z*G.zoomK,sy=(wp.y-10-G.camY)*Z*G.zoomK;const a=0.55+0.25*Math.sin(G.t*0.08);
+      ctx.fillStyle='rgba(232,200,110,'+a+')';
+      if(sx<10||sx>W-10||sy<44||sy>H-120){const cx=clamp(sx,12,W-12),cy=clamp(sy,52,H-120);ctx.beginPath();ctx.moveTo(cx,cy-5);ctx.lineTo(cx+4,cy);ctx.lineTo(cx,cy+5);ctx.lineTo(cx-4,cy);ctx.fill();}
+      else{ctx.beginPath();ctx.moveTo(sx,sy-26);ctx.lineTo(sx+4,sy-21);ctx.lineTo(sx,sy-16);ctx.lineTo(sx-4,sy-21);ctx.fill();}}}
   // стрелка к цели
   if(G.tgt&&!G.tgt.dead&&(G.sync||G.vision>0.3||G.tgt.run)){const sx=(G.tgt.x-G.camX)*Z*G.zoomK,sy=(G.tgt.y-14-G.camY)*Z*G.zoomK;
     if(sx<10||sx>W-10||sy<40||sy>H-60){const cx=clamp(sx,14,W-14),cy=clamp(sy,48,H-110);ctx.fillStyle='#ffd040';ctx.save();ctx.translate(cx,cy);ctx.rotate(Math.atan2(sy-cy,sx-cx));ctx.beginPath();ctx.moveTo(7,0);ctx.lineTo(-4,-5);ctx.lineTo(-4,5);ctx.fill();ctx.restore();}
     else{ctx.fillStyle='#ffd040';ctx.beginPath();ctx.moveTo(sx,sy-22);ctx.lineTo(sx-4,sy-28);ctx.lineTo(sx+4,sy-28);ctx.fill();}}
-  if(ST.hint&&ST.hintT>0){ST.hintT--;const lines=wrap(ST.hint,W-40,8);const h=lines.length*10+8,y=40+objH+4;ctx.globalAlpha=Math.min(1,ST.hintT/30);
-    panel(14,y,W-28,h,'rgba(14,14,20,.85)','#6a5232');lines.forEach((l,i)=>txt(l,W/2,y+12+i*10,8,'#f0e6c8','center'));ctx.globalAlpha=1;}
+  if(ST.hint&&ST.hintT>0){ST.hintT--;if(G.alert&&ST.hintT>60)ST.hintT-=2;const lines=wrap(ST.hint,W-24,7);const h=lines.length*9+6,y=40+objH+3;ctx.globalAlpha=Math.min(1,ST.hintT/30)*0.95;
+    ctx.fillStyle='rgba(10,10,16,.72)';ctx.fillRect(6,y,W-12,h);ctx.fillStyle='#b8904a';ctx.fillRect(6,y,2,h);
+    lines.forEach((l,i)=>txt(l,12,y+9+i*9,7,'#f0e6c8','left'));txt('✕',W-12,y+9,7,'#887','center');ctx.globalAlpha=1;UI.push({x:6,y,w:W-12,h,fn:()=>{ST.hintT=0;}});}
   if(toastT>0){toastT--;if(toastS)txtS(toastS,W/2,H*0.42,11,'#ffe090','center',FD);}
   if(!kbd&&('ontouchstart' in window))drawPad();}
-function drawPad(){const Lp=padLayout(),t=touchKeys();const d=Lp.dpad;ctx.globalAlpha=0.45;ctx.fillStyle='#000';ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,TAU);ctx.fill();
+function drawPad(){const Lp=padLayout(),t=touchKeys();const pt=padTouch();const d=pt?{x:pt.ox,y:pt.oy,r:Lp.dpad.r}:Lp.dpad;if(pt){ctx.globalAlpha=0.5;ctx.fillStyle='#ddd';ctx.beginPath();ctx.arc(pt.x,pt.y,7,0,TAU);ctx.fill();}ctx.globalAlpha=0.45;ctx.fillStyle='#000';ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,TAU);ctx.fill();
   ctx.strokeStyle='rgba(200,180,140,.5)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,TAU);ctx.stroke();
   ctx.fillStyle='#ddd';for(const [k,x,y] of [['r',1,0],['l',-1,0],['u',0,-1],['d',0,1]]){ctx.globalAlpha=t[k]?0.9:0.45;ctx.beginPath();const cx=d.x+x*d.r*0.6,cy=d.y+y*d.r*0.6;
     ctx.moveTo(cx+x*7,cy+y*7);ctx.lineTo(cx-y*6-x*3,cy-x*6-y*3);ctx.lineTo(cx+y*6-x*3,cy+x*6-y*3);ctx.fill();}
