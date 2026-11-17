@@ -987,6 +987,7 @@ function doAction(n){
   if(n.kind==='fish'){startFish();return;}
   if(n.kind==='enter'){changeZone('cave',15*TS+8,37*TS);return;}
   if(n.kind==='resin'){S.f['res_'+o.id]=1;give('resin');sfx('pick');puff(o.x,o.y-4,'#e0a040');storyEvent('resin');saveGame();return;}
+  if(n.kind==='dig2'&&PAST()){openDialog([{w:'narr',s:'Между камнями — узкая щель. Лину протискивается боком, обдирая плечо, и выбирается к выходу из пещеры.'}],()=>changeZone('west',8*TS+8,9*TS+28));return;}
   if(n.kind==='dig2'){
     if(!inv('axe')){toast(tl('Камни плотно засели. Нужен инструмент.'));return;}
     o.hits=(o.hits||0)+1;o.shake=12;sfx('dig');puff(o.x+rnd(-10,10),o.y-8,'#8a8478');
@@ -2205,7 +2206,7 @@ function act36Event(e,arg,o){const st=S.st;
       {w:'linu',s:'Рикс!..'},
       {w:'narr',s:'Грохот. Проход заваливает камнями. За завалом — тишина.',dark:1},
       {w:'linu',s:'*шёпотом* Скелет солдата. Армейский нож. Это был ты. С самого начала — ты.'},
-      {w:'narr',s:'Глава 4 «Отлив» пройдена.',dark:1},{w:'narr',s:'ГЛАВА 5 «ОДНА РУКА»',dark:1}],()=>{rel('rix',1);setStage(73);applyFlags();G.shake=80;});return true;}
+      {w:'narr',s:'Глава 4 «Отлив» пройдена.',dark:1},{w:'narr',s:'ГЛАВА 5 «ОДНА РУКА»',dark:1},{w:'narr',s:'Лину едва успевает выскочить из пещеры. За спиной с грохотом оседают камни.'}],()=>{rel('rix',1);setStage(73);G.shake=80;changeZone('west',8*TS+8,9*TS+28);});return true;}
   if(e==='look'&&(arg==='skel'||arg==='slab'))return true;
   if(e==='zone'){if(arg==='jungle'&&st===69&&PAST())pastStream();
     if(arg==='cave'&&st===71&&PAST())openDialog([{w:'narr',s:'В дальнем зале пещеры, у каменной плиты, лежит Рикс. Нога неестественно вывернута.'},
