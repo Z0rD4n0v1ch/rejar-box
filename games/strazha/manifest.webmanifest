@@ -1,0 +1,17 @@
+{
+  "name": "Ночная стража",
+  "short_name": "Ночная стража",
+  "description": "Платформер о Петербурге 1905–1917 годов: крыши, погони и тайное общество. Rejar Box.",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#10141c",
+  "theme_color": "#10141c",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

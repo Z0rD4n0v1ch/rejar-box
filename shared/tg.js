@@ -95,7 +95,7 @@
   document.addEventListener('visibilitychange', () => pause(document.hidden));
 
   /* облачные сохранения */
-  const SYNC = ['hornet_', 'petlya_'];
+  const SYNC = ['hornet_', 'petlya_', 'strazha_'];
   const CS = at('6.9') && W.CloudStorage;
   if (!CS) return;
   const ok = (k) => SYNC.some((p) => k.startsWith(p)) && /^[A-Za-z0-9_-]{1,128}$/.test(k);
