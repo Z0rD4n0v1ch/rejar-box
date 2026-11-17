@@ -160,7 +160,7 @@ const STY=[null,
   {c:['#6a3a30','#542e26'],climb:1,win:'#e8b060',tower:1},{c:['#504a42','#403a34'],climb:1,win:'#c8a060'},
   {c:['#2e2a26','#26221e'],climb:0,yard:1,win:'#c89048'}];
 function bgAt(tx,ty){if(tx<0||tx>=L.w||ty<0||ty>=L.h)return 0;return L.bg[ty][tx];}
-function climbCell(tx,ty){if(isPipe(tx,ty))return true;if(isSolid(tx,ty)||isOne(tx,ty))return false;const S=STY[bgAt(tx,ty)];return !!(S&&S.climb);}
+function climbCell(tx,ty){return isPipe(tx,ty);}// лазать можно только по трубам (и по боковым стенам — см. startClimb)
 
 /* ================= МИССИЯ 1: НАРВСКИЕ ВОРОТА ================= */
 function buildM1(){const w=212,h=26,GR=23;const m=[];for(let y=0;y<h;y++)m.push(Array(w).fill(' '));
@@ -172,6 +172,7 @@ function buildM1(){const w=212,h=26,GR=23;const m=[];for(let y=0;y<h;y++)m.push(
   // A. улица у ворот
   house(1,12,15,1);house(13,26,12,2);house(27,42,13,3);
   set(9,22,'X');set(10,22,'X');set(10,21,'X');set(20,22,'X');
+  fill(11,16,11,GR-1,'|');fill(24,13,24,GR-1,'|');
   fill(42,14,42,GR-1,'|');
   // B. крыши: шест над проулком, дом D, высокая стена E
   set(44,11,'o');
@@ -184,7 +185,7 @@ function buildM1(){const w=212,h=26,GR=23;const m=[];for(let y=0;y<h;y++)m.push(
   fill(93,9,93,GR-1,'W');
   // D. дом F и пожарная каланча
   house(93,112,9,6);set(93,9,'W');
-  for(let y=1;y<=8;y++)for(let x=104;x<=107;x++)bg[y][x]=7;fill(104,1,107,1,'R');fill(103,1,103,1,'-');fill(108,1,108,1,'-');
+  for(let y=1;y<=8;y++)for(let x=104;x<=107;x++)bg[y][x]=7;fill(104,1,107,1,'R');fill(106,2,106,8,'|');fill(103,1,103,1,'-');fill(108,1,108,1,'-');
   // E. погоня: крыши G, H, трос, I
   fill(109,8,112,8,'s');house(113,140,12,8);
   house(143,160,10,1);fill(143,10,143,GR-1,'W');
@@ -220,8 +221,8 @@ function buildM1(){const w=212,h=26,GR=23;const m=[];for(let y=0;y<h;y++)m.push(
   const trig=[
     {x:tx(1),fn:()=>dialog([['father','Илюша… беги… Не ко мне — к нему. Тот, на крыше… Он махнул им рукой.'],['father','У него перстень… часы… без стрелок…'],['ilya','Отец!..'],['father','Беги, сынок. Наверх…'],['ilya','Я найду его. Слышишь? Найду.']],()=>{
       for(const c of L.crowds)if(c.march){c.flee=1;}setObj('Уходи от солдат по крышам.');hint(touch?'Бег — крестовина слева. Прыжок — кнопка ПРЫЖОК.':'Бег — стрелки или A/D. Прыжок — пробел.');})},
-    {x:tx(7),fn:()=>hint('Илья лазает по фасадам с карнизами и по стенам. Встань у дома и жми '+U+'.')},
-    {x:tx(13),y:ty(14),fn:()=>hint('Прыжок с фасада: ПРЫЖОК — вверх, ПРЫЖОК и направление — в сторону. Отпустить стену — '+D+' и ПРЫЖОК.')},
+    {x:tx(7),fn:()=>hint('Наверх — по водосточной трубе: встань у трубы и жми '+U+'. По боковым стенам домов тоже можно лезть.')},
+    {x:tx(13),y:ty(14),fn:()=>hint('С трубы или стены: ПРЫЖОК и направление — прыжок в сторону. Отпустить — '+D+' и ПРЫЖОК.')},
     {x:tx(40),y:ty(13),fn:()=>hint('Над проулком шест. Прыгни к нему — Илья раскачается. Жми ПРЫЖОК, чтобы перелететь.')},
     {x:tx(48),y:ty(12),fn:()=>hint('Городовой стоит спиной. Подкрадись сзади и ударь — скрытый клинок убивает без шума.')},
     {x:tx(56),y:ty(12),fn:()=>hint('Высокая стена: прыгни на неё и жми '+U+' — Илья вскарабкается. От стены можно оттолкнуться: ПРЫЖОК и направление от стены.')},
@@ -230,7 +231,7 @@ function buildM1(){const w=212,h=26,GR=23;const m=[];for(let y=0;y<h;y++)m.push(
     {x:tx(76),y:ty(GR+1),fn:()=>hint('Толпа укрывает. Иди внутри толпы — городовые тебя не заметят.')},
     {x:tx(84),y:ty(GR+1),fn:()=>{hint('Трое у ворот. Держи БЛОК — когда враг ударит, жми УДАР: контрудар убивает сразу. БЛОК и направление — перекат.');for(const e of L.enemies)if(e.grp)alertE(e,1);G.alarms-=3;}},
     {x:tx(86),y:ty(19),fn:()=>hint('Метательные ножи! Оружие меняется касанием значка оружия слева вверху (на ПК — Q).')},
-    {x:tx(100),y:ty(10),fn:()=>hint('Пожарная каланча — точка обзора. Залезь на самый верх и жми '+U+' — синхронизация.')},
+    {x:tx(100),y:ty(10),fn:()=>hint('Пожарная каланча — точка обзора. Залезь по трубе на самый верх и жми '+U+' — синхронизация.')},
     {x:tx(118),y:ty(13),fn:()=>startChase()},
   ];
   return {w,h,map:m,bg,ent,items,props,cps,hides,wires,crowds,views,target,trig,name:'Нарвские ворота',par:420,startX:tx(3),startY:ty(GR),GR};}
@@ -649,9 +650,9 @@ function drawTiles(){const x0=Math.floor(G.camX/TS),x1=Math.ceil((G.camX+VW/G.zo
     if(S.yard){ctx.fillStyle=c[1];if((tx+ty)%2)ctx.fillRect(sx,sy+15,TS,1);if(hash(tx,ty)>0.82){ctx.fillStyle=S.win;ctx.fillRect(sx+5,sy+3,5,8);ctx.fillStyle='rgba(232,170,90,.12)';ctx.fillRect(sx+1,sy-1,13,16);}continue;}
     const top=ty>0&&L.bg[ty-1][tx]!==b;
     // карнизы — за них можно цепляться
-    if(ty%3===0){ctx.fillStyle=S.climb?'#8a7a64':c[1];ctx.fillRect(sx,sy+13,TS,2);if(S.climb){ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(sx,sy+15,TS,1);}}
+    if(ty%3===0){ctx.fillStyle=c[1];ctx.fillRect(sx,sy+13,TS,2);}
     if(ty%3===1&&tx%2===0&&ty<L.GR-1){const lit=hash(tx,ty)>0.62;ctx.fillStyle='#14141a';ctx.fillRect(sx+3,sy,10,13);ctx.fillStyle=lit?S.win:'#2a3448';ctx.fillRect(sx+4,sy+1,8,11);
-      ctx.fillStyle=c[1];ctx.fillRect(sx+7.5,sy+1,1,11);ctx.fillRect(sx+4,sy+6,8,1);if(S.climb){ctx.fillStyle='#8a7a64';ctx.fillRect(sx+2,sy+12,12,1.5);ctx.fillRect(sx+2,sy-1,12,1.2);}
+      ctx.fillStyle=c[1];ctx.fillRect(sx+7.5,sy+1,1,11);ctx.fillRect(sx+4,sy+6,8,1);
       if(lit){ctx.fillStyle='rgba(232,170,90,.1)';ctx.fillRect(sx,sy-2,TS,18);}}
     if(ty===L.GR-1&&tx%4===1){ctx.fillStyle='#16120e';ctx.fillRect(sx+2,sy+1,12,15);ctx.fillStyle='#3a2a1c';ctx.fillRect(sx+3,sy+2,10,14);}
     if(S.tower&&ty%2===0){ctx.fillStyle='#3a1a14';ctx.fillRect(sx,sy+7,TS,1);}
