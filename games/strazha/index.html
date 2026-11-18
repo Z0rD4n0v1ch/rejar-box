@@ -161,12 +161,15 @@ function touchKeys(){const o={l:0,r:0,u:0,d:0,j:0,a:0,b:0,v:0};if(ST.scene!=='ga
 function hitUI(p){for(let i=UI.length-1;i>=0;i--){const u=UI[i];if(p.x>=u.x&&p.x<=u.x+u.w&&p.y>=u.y&&p.y<=u.y+u.h){u.fn();return true;}}return false;}
 cv.addEventListener('touchstart',e=>{e.preventDefault();auInit();kbd=false;for(const t of e.changedTouches){const p=toLogical(t.clientX,t.clientY);
   if(ST.dlg){dlgNext();TOUCH[t.identifier]={...p,ui:1};continue;}
-  const ui=hitUI(p);TOUCH[t.identifier]={...p,sx:p.x,sy:p.y,ui:ui?1:0};if(!ui)mapDragStart(p);}},{passive:false});
-cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches){const o=TOUCH[t.identifier];if(!o)continue;const p=toLogical(t.clientX,t.clientY);o.x=p.x;o.y=p.y;mapDragMove(p);}},{passive:false});
-const tEnd=e=>{e.preventDefault();for(const t of e.changedTouches){if(MAP.drag)mapDragEnd(toLogical(t.clientX,t.clientY));delete TOUCH[t.identifier];}};
+  const ui=hitUI(p);TOUCH[t.identifier]={...p,sx:p.x,sy:p.y,ui:ui?1:0};if(!ui)mapDragStart(p);}
+  if(ST.scene==='title'&&ST.menu==='map'){const ts=Object.values(TOUCH).filter(t=>!t.ui);if(ts.length===2){const d=Math.hypot(ts[0].x-ts[1].x,ts[0].y-ts[1].y)||1;MAP.pinch={d0:d,z0:MAP.z};MAP.drag=null;}}},{passive:false});
+cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches){const o=TOUCH[t.identifier];if(!o)continue;const p=toLogical(t.clientX,t.clientY);o.x=p.x;o.y=p.y;if(!MAP.pinch)mapDragMove(p);}
+  if(MAP.pinch){const ts=Object.values(TOUCH).filter(t=>!t.ui);if(ts.length>=2){const d=Math.hypot(ts[0].x-ts[1].x,ts[0].y-ts[1].y)||1;mapZoom(MAP.pinch.z0*d/MAP.pinch.d0,(ts[0].x+ts[1].x)/2,(ts[0].y+ts[1].y)/2);}}},{passive:false});
+const tEnd=e=>{e.preventDefault();for(const t of e.changedTouches){if(MAP.drag)mapDragEnd(toLogical(t.clientX,t.clientY));delete TOUCH[t.identifier];}if(MAP.pinch&&Object.values(TOUCH).filter(t=>!t.ui).length<2)MAP.pinch=null;};
 cv.addEventListener('touchend',tEnd,{passive:false});cv.addEventListener('touchcancel',tEnd,{passive:false});
 cv.addEventListener('mousemove',e=>{const p=toLogical(e.clientX,e.clientY);PT.x=p.x;PT.y=p.y;PT.over=true;mapDragMove(p);});
 addEventListener('mouseup',e=>{if(MAP.drag)mapDragEnd(toLogical(e.clientX,e.clientY));});
+cv.addEventListener('wheel',e=>{if(ST.scene==='title'&&ST.menu==='map'){e.preventDefault();const p=toLogical(e.clientX,e.clientY);mapZoom(MAP.z*(e.deltaY<0?1.15:1/1.15),p.x,p.y);}},{passive:false});
 cv.addEventListener('mousedown',e=>{auInit();const p=toLogical(e.clientX,e.clientY);if(ST.dlg){dlgNext();return;}if(!hitUI(p))mapDragStart(p);});
 function readInput(){const t=touchKeys();
   IN.l=K.ArrowLeft||K.KeyA||t.l?1:0;IN.r=K.ArrowRight||K.KeyD||t.r?1:0;IN.u=K.ArrowUp||K.KeyW||t.u?1:0;IN.d=K.ArrowDown||K.KeyS||t.d?1:0;
@@ -287,7 +290,7 @@ const MISSIONS=[
 const EHP={cop:3,soldier:3,officer:5,line:99};
 function mkEnemy(o){return {...o,hp:EHP[o.k],st:'patrol',meter:0,t:0,cd:0,stun:0,aim:0,wind:0,lost:0,dead:0,dt:0,face:o.face||1,anim:0,x1:o.x1==null?o.x:o.x1,x2:o.x2==null?o.x:o.x2,heavyN:0,pose:null,wait:0};}
 function mkCrowd(c){const ms=[];for(let i=0;i<c.n;i++)ms.push({dx:(i-(c.n-1)/2)*7+rnd(-2,2),ph:rnd(0,TAU),look:i%3,woman:i%2===1});return {...c,ms,gone:0};}
-function startMission(n){const M=MISSIONS[n-1];if(!M.build)return;L=M.build();L.mi=n;
+function startMission(n){const M=n===0?TRAIN:MISSIONS[n-1];if(!M.build)return;L=M.build();L.mi=n;
   G={t:0,kills:0,silent:0,alarms:0,retries:0,rub:0,part:0,cp:0,flags:{},trigDone:{},shake:0,fx:[],snow:[],vision:0,done:0,deadT:0,camX:0,camY:0,slow:0,zoomK:1,tok:null,knives:[],sync:0,tgt:null};wxInit();
   L.enemies=L.ent.map(mkEnemy);L.crowds=L.crowds.map(mkCrowd);L.life=(L.life||[]).map(mkLife);L.flocks=(L.flocks||[]).map(mkFlock);cityPrep();L.softs=L.hides.map(h=>({x:h.x,y:h.y,w:h.w}));
   for(let y=0;y<L.h;y++){let x=0;while(x<L.w){if(L.map[y][x]==='s'){let x2=x;while(x2+1<L.w&&L.map[y][x2+1]==='s')x2++;L.softs.push({x:(x+x2+1)*TS/2,y:(y+1)*TS,w:(x2-x+1)*TS});x=x2+1;}else x++;}}
@@ -735,7 +738,7 @@ function drawFacadeCell(tx,ty,b,sx,sy){const name=b===9?'brick':FAC[b];if(!name)
 /* ================= РИСОВАНИЕ МИРА ================= */
 function drawSky(){const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0e1220');g.addColorStop(0.55,'#2a2c44');g.addColorStop(0.85,'#5a4448');g.addColorStop(1,'#7a5040');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
   // луна
-  ctx.fillStyle='rgba(240,230,200,.9)';ctx.beginPath();ctx.arc(W*0.78,H*0.12,9,0,TAU);ctx.fill();ctx.fillStyle='rgba(240,230,200,.08)';ctx.beginPath();ctx.arc(W*0.78,H*0.12,26,0,TAU);ctx.fill();
+  {const md=(ST.scene==='game'&&G&&G.wx&&L&&L.dawn)?G.wx.dawn:0;const ma=Math.max(0,1-md*1.3);if(ma>0){ctx.globalAlpha=ma;ctx.fillStyle='rgba(240,230,200,.9)';ctx.beginPath();ctx.arc(W*0.78,H*0.12+md*30,9,0,TAU);ctx.fill();ctx.fillStyle='rgba(240,230,200,.08)';ctx.beginPath();ctx.arc(W*0.78,H*0.12+md*30,26,0,TAU);ctx.fill();ctx.globalAlpha=1;}}
   if(CITY.ok){for(const [im,pk,hh,by] of [[CITY.far,0.08,0.42,0.66],[CITY.mid,0.22,0.5,0.9]]){const h=H*hh,w=im.width*h/im.height;const ox=-((G.camX*Z*pk)%w),y=H*by-h-G.camY*Z*pk*0.4;
       for(let x=ox-w;x<W;x+=w)ctx.drawImage(im,x,y,w+1,h);if(im===CITY.mid&&y+h<H){ctx.fillStyle='#1c1b22';ctx.fillRect(0,y+h-1,W,H-y-h+1);}}
     const fg2=ctx.createLinearGradient(0,H*0.55,0,H);fg2.addColorStop(0,'rgba(90,70,80,0)');fg2.addColorStop(1,'rgba(90,70,80,.3)');ctx.fillStyle=fg2;ctx.fillRect(0,H*0.55,W,H*0.45);return;}
@@ -962,13 +965,53 @@ function drawTitle(){UI=[];const t=ST.t;const g=ctx.createLinearGradient(0,0,0,H
   button('ЗВУК: '+(AU.on?'ВКЛ':'ВЫКЛ'),x,y,w,18,()=>{auInit();setSound(!AU.on);});y+=24;
   button('МУЗЫКА: '+(AU.musOn?'ВКЛ':'ВЫКЛ'),x,y,w,18,()=>{auInit();setMus(!AU.musOn);});y+=24;
   button('КНОПКИ: '+(CFG.big?'КРУПНЫЕ':'ОБЫЧНЫЕ'),x,y,w/2-2,18,()=>{CFG.big=CFG.big?0:1;store.set('strazha_cfg',CFG);},{size:7});button('ВИБРО: '+(CFG.vib?'ВКЛ':'ВЫКЛ'),x+w/2+2,y,w/2-2,18,()=>{CFG.vib=CFG.vib?0:1;store.set('strazha_cfg',CFG);haptic('medium');},{size:7});y+=24;
-  button('ВСЕ ИГРЫ REJAR BOX',x,y,w,18,()=>{location.href='../../';});
+  button('ТРЕНИРОВКА',x,y,w/2-2,18,()=>{auInit();startMission(0);},{size:7});button('ВСЕ ИГРЫ',x+w/2+2,y,w/2-2,18,()=>{location.href='../../';},{size:7});
   txt('Ранняя версия · миссия 1 из 15',W/2,H-8,6,'rgba(232,220,192,.55)','center');}
 function drawMissionList(){ctx.fillStyle='rgba(8,8,12,.88)';ctx.fillRect(0,0,W,H);panel(8,6,W-16,H-12);txt('МИССИИ',W/2,22,10,'#e8c070','center',FD);let y=30;const rh=Math.max(12,Math.min(17,(H-80)/18));
   const acts=[['АКТ I · «КРОВАВЫЙ СНЕГ» · 1905',0],['АКТ II · «ФЕВРАЛЬ» · 1917',5],['АКТ III · «ОКТЯБРЬ» · 1917',10]];
   for(const [an,s] of acts){txt(an,18,y+8,6,'#b8a070','left',FD);y+=11;for(let i=s;i<s+5;i++){const M=MISSIONS[i],ok=!!M.build,r=SAVE.m[M.n];
       button((M.n+'. '+M.name)+(r?'  ['+r.rank+']':''),16,y,W-32,rh-2,()=>startMission(M.n),{size:7,dis:!ok});if(!ok)txt('скоро',W-22,y+rh/2+2,6,'#776','right');y+=rh;}y+=2;}
   button('НАЗАД',W/2-40,H-30,80,18,()=>{ST.menu='main';},{size:7});}
+/* ================= ТРЕНИРОВКА НА КРЫШАХ ================= */
+function buildTrain(){const w=116,h=20,GR=17;const m=[];for(let y=0;y<h;y++)m.push(Array(w).fill(' '));
+  const bg=[];for(let y=0;y<h;y++)bg.push(Array(w).fill(0));
+  const set=(x,y,c)=>{if(x>=0&&x<w&&y>=0&&y<h)m[y][x]=c;};
+  const fill=(x0,y0,x1,y1,c)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)set(x,y,c);};
+  const house=(x0,x1,roof,style)=>{for(let y=roof;y<=GR-1;y++)for(let x=x0;x<=x1;x++)bg[y][x]=style;fill(x0,roof,x1,roof,'R');};
+  fill(0,GR,w-1,h-1,'G');fill(0,0,0,GR-1,'W');fill(w-1,0,w-1,GR-1,'W');
+  set(6,16,'X');set(8,16,'X');set(8,15,'X');           // 1. ящики — прыжки
+  house(10,20,11,1);fill(11,12,11,GR-1,'|');            // 2. труба
+  house(22,32,10,2);                                     // 3. уступ выше — зацепиться за край
+  set(34,8,'o');house(36,48,8,3);                        // 4. шест над проулком
+  house(59,70,11,4);                                     // 5. трос вниз
+  house(71,80,10,6);for(let y=3;y<=9;y++)for(let x=74;x<=77;x++)bg[y][x]=7;fill(74,3,77,3,'R');fill(76,4,76,9,'|');// 6. каланча
+  const tx=x=>x*TS+8,ty=y=>y*TS;
+  const ent=[mkE0('cop',94,GR,1),mkE0('cop',106,GR,-1)];
+  function mkE0(k,x,y,f){return {k,x:tx(x),y:ty(y),face:f,x1:tx(x),x2:tx(x)};}
+  const items=[{k:'tea',x:tx(100),y:ty(GR)},{k:'knives',x:tx(88),y:ty(GR)}];
+  const props=[{k:'hay',x:tx(84),y:ty(GR)},{k:'lamp',x:tx(4),y:ty(GR)},{k:'lamp',x:tx(98),y:ty(GR)},{k:'chim',x:tx(28),y:ty(10)},{k:'chim',x:tx(44),y:ty(8)},{k:'chim',x:tx(64),y:ty(11)},{k:'bell',x:tx(75)+8,y:ty(3)},{k:'flag',x:tx(112),y:ty(GR)}];
+  const hides=[{x:tx(84),y:ty(GR),w:30}];
+  const wires=[{x1:tx(47),y1:ty(8)-24,x2:tx(61),y2:ty(11)-26}];
+  const crowds=[{x:tx(90),y:ty(GR),x1:tx(87),x2:tx(91),n:4,dir:1,sp:0.2}];
+  const views=[{x:tx(75)+8,y:ty(3)}];
+  const cps=[{x:tx(2),y:ty(GR)},{x:tx(13),y:ty(11)},{x:tx(25),y:ty(10)},{x:tx(38),y:ty(8)},{x:tx(62),y:ty(11)},{x:tx(72),y:ty(10)},{x:tx(86),y:ty(GR)},{x:tx(100),y:ty(GR)}];
+  const touch=!kbd&&('ontouchstart' in window);const U=touch?'▲':'↑',D=touch?'▼':'↓';
+  const trig=[
+    {x:tx(1),fn:()=>{setObj('Тренировка: пройди крыши до флага.');hint(touch?'Бег — крестовина слева. Прыжок — кнопка ПРЫЖОК. Перепрыгни ящики.':'Бег — стрелки или A/D. Прыжок — пробел. Перепрыгни ящики.');}},
+    {x:tx(9),fn:()=>hint('Водосточная труба: встань у неё и жми '+U+'. Наверху — ПРЫЖОК в сторону крыши.')},
+    {x:tx(18),y:ty(11),fn:()=>hint('Следующая крыша выше. Прыгни к её краю — Илья сам зацепится. Потом '+U+' — подтянуться.')},
+    {x:tx(30),y:ty(10),fn:()=>hint('Над проулком шест. Прыгни к нему — Илья раскачается. ПРЫЖОК — перелететь.')},
+    {x:tx(45),y:ty(8),fn:()=>hint('Телеграфный трос: прыгни на него с края крыши — Илья съедет вниз.')},
+    {x:tx(70),y:ty(11),fn:()=>hint('Каланча — точка обзора. Залезь по трубе на верх и жми '+U+' — синхронизация.')},
+    {x:tx(76),y:ty(4),fn:()=>hint('Прыжок веры: прыгни с каланчи вправо — прямо в воз с сеном внизу.')},
+    {x:tx(85),y:ty(GR+1),fn:()=>hint('Городовой стоит спиной. Подкрадись сзади и ударь — скрытый клинок убивает без шума. Толпа укроет.')},
+    {x:tx(99),y:ty(GR+1),fn:()=>{hint('Бой: держи БЛОК, а когда городовой ударит — жми УДАР: контрудар. БЛОК и направление — перекат.');for(const e of L.enemies)if(!e.dead)alertE(e,1);G.alarms=0;}},
+    {x:tx(111),fn:()=>finishTrain()}];
+  return {w,h,map:m,bg,ent,items,props,cps,hides,wires,crowds,views,target:null,trig,life:[{k:'dog',x:tx(5),y:ty(GR),x1:tx(2),x2:tx(9),sp:0.4}],flocks:[{x:tx(40),y:ty(8),w:30,n:3},{x:tx(65),y:ty(11),w:24,n:3}],
+    name:'Тренировка',train:1,par:999,startX:tx(2),startY:ty(GR),GR};}
+const TRAIN={n:0,name:'Тренировка',year:'Петербург',build:buildTrain,brief:['Крыши Васильевского острова. Ночь.','Отец учил Илью лазать по башенным часам. Самое время вспомнить.']};
+function finishTrain(){if(G.done)return;G.done=1;SAVE.train=1;saveProg();sfx('sync');haptic('success');
+  cutscene(['Тренировка пройдена.','Илья готов к улицам Петербурга.'],()=>{ST.scene='title';ST.menu='main';});}
 /* ================= СНАРЯЖЕНИЕ, АРХИВ, ВИБРАЦИЯ ================= */
 const UPG=[
   {id:'coat',name:'Кафтан на вате',about:'Толстая подкладка держит удар шашки.',lv:['+1 к здоровью','+2 к здоровью'],cost:[12,25]},
@@ -1115,13 +1158,15 @@ function drawAct(){UI=[];const A=ST.act,a=A.a,t=A.t;ctx.fillStyle='#000';ctx.fil
   ctx.globalAlpha=1;if(t<25){ctx.fillStyle='rgba(0,0,0,'+(1-t/25)+')';ctx.fillRect(0,0,W,H);}
   UI.push({x:0,y:0,w:W,h:H,fn:actTap});}
 // ---- карта ----
-const MAP={x:0,y:0,s:1,sel:1,drag:null,init:0,tab:1,goal:null};
+const MAP={x:0,y:0,s:1,sel:1,drag:null,init:0,tab:1,goal:null,z:1,pinch:null};
 function mapDone(n){return !!SAVE.m[n];}
 function mapOpen(){ST.scene='title';ST.menu='map';let n=1;for(const M of MISSIONS)if(M.build&&!mapDone(M.n)){n=M.n;break;}
   if(!MISSIONS[n-1].build||mapDone(n))n=MAP.sel||1;MAP.sel=n;MAP.tab=actOf(n).n;MAP.init=0;}
 const mapCH=()=>portrait?78:48;
-function mapMetrics(){const im=IMG.map,iw=im.naturalWidth||1376,ih=im.naturalHeight||768;const s=Math.max(W/iw,(H-27-mapCH()-8)/ih);return {iw,ih,s,mw:iw*s,mh:ih*s};}
-function mapClamp(){const m=mapMetrics();MAP.x=clamp(MAP.x,Math.min(0,W-m.mw),0);MAP.y=clamp(MAP.y,Math.min(27,H-mapCH()-8-m.mh),27);}
+function mapZmin(){const iw=IMG.map.naturalWidth||1376,ih=IMG.map.naturalHeight||768,a=H-27-mapCH()-8;return Math.min(W/iw,a/ih)/Math.max(W/iw,a/ih);}
+function mapMetrics(){const im=IMG.map,iw=im.naturalWidth||1376,ih=im.naturalHeight||768;const s=Math.max(W/iw,(H-27-mapCH()-8)/ih)*MAP.z;return {iw,ih,s,mw:iw*s,mh:ih*s};}
+function mapClamp(){const m=mapMetrics(),top=27,bot=H-mapCH()-8;MAP.x=m.mw<=W?(W-m.mw)/2:clamp(MAP.x,W-m.mw,0);MAP.y=m.mh<=bot-top?top+(bot-top-m.mh)/2:clamp(MAP.y,bot-m.mh,top);}
+function mapZoom(z,cx,cy){const m0=mapMetrics();const z1=clamp(z,mapZmin(),2.2);const ix=(cx-MAP.x)/m0.s,iy=(cy-MAP.y)/m0.s;MAP.z=z1;const m1=mapMetrics();MAP.x=cx-ix*m1.s;MAP.y=cy-iy*m1.s;MAP.goal=null;mapClamp();}
 function mapCenterOn(n,inst){const m=mapMetrics(),[px,py]=MPOS[n];const gx=W/2-px*m.s,gy=27+(H-27-mapCH()-8)/2-py*m.s;
   if(inst){MAP.x=gx;MAP.y=gy;mapClamp();MAP.goal=null;}else MAP.goal=[gx,gy];}
 function mapSelect(n){MAP.sel=n;MAP.tab=actOf(n).n;mapCenterOn(n);tone&&tone(660,0.05,'square',0.05);}
@@ -1159,6 +1204,7 @@ function drawMap(){UI=[];const m=mapMetrics();if(!MAP.init){mapCenterOn(MAP.sel,
   const tw=Math.min(58,(W-60)/3);for(const a of ACTS){const x=30+(a.n-1)*(tw+2);button('АКТ '+a.rim,x,4,tw,18,()=>{mapSelect(a.first);},{size:7,hot:a.n===MAP.tab});}
   button('▶',W-26,4,22,18,()=>{showAct(ACTS[MAP.tab-1],()=>{ST.scene='title';ST.menu='map';});},{size:8});
   // карточка миссии
+  {const zx=W-26,zy=34;button('+',zx,zy,20,18,()=>mapZoom(MAP.z*1.3,W/2,(H-mapCH())/2),{size:10});button('−',zx,zy+22,20,18,()=>mapZoom(MAP.z/1.3,W/2,(H-mapCH())/2),{size:10});}
   {const by=H-mapCH()-30,bw=Math.min(110,(W-18)/2);button('СНАРЯЖЕНИЕ ₽'+(SAVE.rub||0),6,by,bw,18,()=>{ST.menu='shop';},{size:7});
    button('АРХИВ '+Object.keys(SAVE.codex||{}).length+'/'+CODEX.length,W-6-bw,by,bw,18,()=>{CX.sel=null;CX.back=()=>{ST.menu='map';};ST.menu='codex';},{size:7});}
   const M=MISSIONS[MAP.sel-1],r=SAVE.m[M.n],ok=!!M.build,ch=mapCH()-4,cy=H-ch-4,cx=6,cw=W-12;
@@ -1228,7 +1274,7 @@ let last=0,acc=0;function loop(ts){requestAnimationFrame(loop);if(!last)last=ts;
   while(acc>=1000/60){update();acc-=1000/60;}draw();}
 layout();requestAnimationFrame(loop);
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
-window.__strazha={get P(){return P},get L(){return L},get G(){return G},ST,IN,K,startMission,step:n=>{for(let i=0;i<(n||1);i++)update();},dlgNext,restoreCP,SAVE,tile,MISSIONS,nextWeapon,UPG,CODEX,buyUpg,CX,MAP,mapOpen,playMission,showAct,ACTS,get ACT(){return ST.act},dialog,get TRKNOW(){return TCUR&&TCUR.k},get TBK(){return Object.keys(TB)},AU};
+window.__strazha={get P(){return P},get L(){return L},get G(){return G},ST,IN,K,startMission,step:n=>{for(let i=0;i<(n||1);i++)update();},dlgNext,restoreCP,SAVE,tile,MISSIONS,nextWeapon,mapZoom,UPG,CODEX,buyUpg,CX,MAP,mapOpen,playMission,showAct,ACTS,get ACT(){return ST.act},dialog,get TRKNOW(){return TCUR&&TCUR.k},get TBK(){return Object.keys(TB)},AU};
 })();
 
 </script>
