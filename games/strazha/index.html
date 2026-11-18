@@ -418,7 +418,7 @@ function updPlayer(){const p=P;p.anim++;if(p.inv>0)p.inv--;if(p.hurt>0)p.hurt--;
     else if(W0==='gun'){if(p.atk===0&&p.gunN>0){useGun();p.atk=22;p.atkN=5;}}
     else if(W0==='whistle'){if(p.atk===0&&p.callN>0){useWhistle();p.atk=14;p.atkN=5;}}
     else if(W0==='throw'){if(p.atk===0&&p.throwN>0){p.throwN--;p.atk=14;p.atkN=5;G.knives.push({x:p.x+p.face*8,y:p.y-15,vx:p.face*5.5,t:0});sfx('throw');if(p.throwN===0)p.wpn=0;}}
-    else if(p.atk===0||p.atk<7){const asg=assassinTarget();if(asg){finisher(asg,asg.how);p.atk=22;p.atkN=4;}
+    else if(p.atk===0||p.atk<7){const pr=W0!=='knife'?pairTargets():null,ch=!pr?chainTarget():null,asg=!pr&&!ch?assassinTarget():null;if(pr){doubleKill(pr);p.atk=26;p.atkN=4;}else if(ch){chainKill(ch);p.atk=18;p.atkN=4;}else if(asg){finisher(asg,asg.how);p.atk=22;p.atkN=4;}
       else{p.combo=p.comboT>0?Math.min(3,p.combo+1):1;p.atk=p.combo===3?20:15;p.atkN=p.combo;p.comboT=p.atk+12;p.hitDone=0;}}}
   if(p.atk>0){p.atk--;if(!p.hitDone&&p.atkN<=3&&p.atk<=(p.atkN===3?13:10)&&p.atk>=5){p.hitDone=attackHit();}}
   p.blk=IN.b&&grounded&&p.atk===0&&p.hurt===0&&!dir?1:0;
@@ -453,6 +453,21 @@ function grabPole(){if(P.noGrab>0)return;const hx=P.x,hy=P.y-21;const tx=Math.fl
 function grabWire(){if(P.noGrab>0||P.vy<-1)return;for(const w of L.wires){const hx=P.x,hy=P.y-22;const t=(hx-w.x1)/(w.x2-w.x1);if(t<0||t>0.9)continue;
   const wy=lerp(w.y1,w.y2,t);if(Math.abs(hy-wy)<7){P.st='zip';P.zw=w;P.zt=t;P.vx=0;P.vy=0;sfx('grab');return;}}}
 /* скрытое убийство: сзади, из укрытия, из толпы */
+// ---- групповое убийство: двое рядом и не настороже — оба падают от одного удара ----
+function pairTargets(){const c=[];for(const e of L.enemies){if(e.dead||e.k==='line'||e.boss||e.ally)continue;const dx=e.x-P.x;
+  if(Math.abs(dx)>44||Math.abs(e.y-P.y)>14)continue;if(e.st==='alert'&&!(e.smoked>0))continue;c.push(e);}
+  if(c.length<2)return null;c.sort((a,b)=>Math.abs(a.x-P.x)-Math.abs(b.x-P.x));if(Math.abs(c[0].x-P.x)>26||Math.abs(c[1].x-c[0].x)>30)return null;return [c[0],c[1]];}
+function doubleKill(pair){const [a,b]=pair;G.slow=34;G.hitstop=9;haptic('heavy');sfx('blade');setTimeout(()=>sfx('blade'),120);
+  finisher(a,'double');finisher(b,'double');toastTxt('Двойное убийство!');ach('double');G.dbl=(G.dbl||0)+1;
+  for(const e of pair)fx('blood',e.x,e.y-13);}
+// ---- серия в бою: после убийства есть миг, чтобы рывком добить следующего ----
+function chainTarget(){if(!(G.chainT>0))return null;let best=null,bd=1e9;for(const e of L.enemies){if(e.dead||e.k==='line'||e.boss||e.ally)continue;const d=Math.abs(e.x-P.x);
+  if(d<60&&d>4&&Math.abs(e.y-P.y)<16&&d<bd){bd=d;best=e;}}return best;}
+function chainKill(e){const f=sgn(e.x-P.x)||P.face;fx('dust',P.x,P.y,{n:4});P.face=f;P.x=e.x-f*12;sfx('whoosh2');G.chainN=(G.chainN||1)+1;finisher(e,'chain');
+  toastTxt('Серия ×'+G.chainN);if(G.chainN>=3)ach('chain3');G.slow=Math.max(G.slow,14);}
+function drawGroupMarks(){if(P.st==='dead'||ST.dlg)return;const pr=pairTargets();if(pr){for(const e of pr){ctx.fillStyle='rgba(255,60,40,'+(0.6+0.3*Math.sin(G.t*0.25))+')';ctx.beginPath();ctx.moveTo(e.x,e.y-33);ctx.lineTo(e.x-4,e.y-39);ctx.lineTo(e.x+4,e.y-39);ctx.fill();}
+    ctx.strokeStyle='rgba(255,90,60,.6)';ctx.setLineDash([2,2]);ctx.beginPath();ctx.moveTo(pr[0].x,pr[0].y-36);ctx.lineTo(pr[1].x,pr[1].y-36);ctx.stroke();ctx.setLineDash([]);return;}
+  const c=chainTarget();if(c){ctx.strokeStyle='rgba(255,200,80,'+(0.5+0.4*Math.sin(G.t*0.3))+')';ctx.lineWidth=1;ctx.beginPath();ctx.arc(c.x,c.y-14,13,0,TAU);ctx.stroke();}}
 function assassinTarget(){for(const e of L.enemies){if(e.dead||e.k==='line'||e.boss)continue;const dx=(e.x-P.x)*P.face;if(dx<-2||dx>18||Math.abs(e.y-P.y)>14)continue;
   if(e.smoked>0)return Object.assign(e,{how:'hide'});
   if(e.st!=='alert'&&e.face===P.face)return Object.assign(e,{how:'back'});
@@ -467,12 +482,15 @@ function attackHit(){let hit=false;const knife=WPN[P.wpn]==='knife';for(const e 
     sfx('hit');fx('blood',e.x,e.y-13);alertE(e);if(e.hp<=0)finisher(e,'fight');}}
   if(hit)G.shake=3;return hit;}
 function airKill(){if(P.vy<1.5)return;for(const e of L.enemies){if(e.dead||e.k==='line')continue;
-  if(Math.abs(e.x-P.x)<11&&P.y>e.y-28&&P.y<e.y-8){finisher(e,'air');P.vy=-2.5;P.fallY=P.y;return;}}}
+  if(Math.abs(e.x-P.x)<11&&P.y>e.y-28&&P.y<e.y-8){const o=L.enemies.find(q=>q!==e&&!q.dead&&q.k!=='line'&&!q.boss&&q.st!=='alert'&&Math.abs(q.x-e.x)<26&&Math.abs(q.y-e.y)<10);
+    if(o&&e.st!=='alert'){finisher(e,'double');finisher(o,'double');G.slow=34;toastTxt('Двойной удар сверху!');ach('double');haptic('heavy');}else finisher(e,'air');P.vy=-2.5;P.fallY=P.y;return;}}}
 function finisher(e,how){if(e.boss){bossHit(e,how);return;}haptic('medium');e.dead=1;e.dt=0;e.st='dead';e.how=how;e.dface=sgn(P.x-e.x)||1;if(G.tok===e)G.tok=null;G.kills++;
-  const silent=(how==='back'||how==='hide'||how==='air')&&WPN[P.wpn]!=='knife';
-  if(silent){G.silent++;if(how==='back'||how==='air')ach('blade');}if(G.wx&&G.wx.int>0.5)ach('storm');else for(const o of L.enemies)if(!o.dead&&o!==e&&Math.abs(o.x-e.x)<90&&Math.abs(o.y-e.y)<30&&o.st!=='alert')o.meter=Math.min(1,o.meter+0.6);
+  const silent=(how==='back'||how==='hide'||how==='air'||how==='double')&&WPN[P.wpn]!=='knife';
+  if(silent){G.silent++;if(how==='back'||how==='air')ach('blade');}else if(how!=='double')for(const o of L.enemies)if(!o.dead&&o!==e&&Math.abs(o.x-e.x)<90&&Math.abs(o.y-e.y)<30&&o.st!=='alert')o.meter=Math.min(1,o.meter+0.6);
+  if(G.wx&&G.wx.int>0.5)ach('storm');
+  if(how==='fight'||how==='counter'||how==='chain'){G.chainT=90;}
   P.kill=24;G.slow=how==='fight'?0:22;G.hitstop=Math.max(G.hitstop||0,how==='fight'?5:7);e.kx=-e.dface*(how==='fight'?2.5:1.2);e.flash=8;G.kick=-e.dface*2.5;buzz(how==='fight'?20:35);sfx(silent?'blade':'kill');fx('blood',e.x,e.y-13);G.shake=5;
-  toastTxt({air:'Удар сверху!',counter:'Контрудар!',back:silent?'Тихий удар':'Удар в спину',hide:'Удар из укрытия',fight:''}[how]||'');}
+  if(how!=='double'&&how!=='chain')toastTxt({air:'Удар сверху!',counter:'Контрудар!',back:silent?'Тихий удар':'Удар в спину',hide:'Удар из укрытия',fight:''}[how]||'');}
 
 
 /* ================= ОЩУЩЕНИЯ: шаги, отлёт, сердце ================= */
@@ -1063,6 +1081,8 @@ const ACH=[
   {id:'gear',t:'Снаряжён',d:'Купить все улучшения'},
   {id:'train',t:'Ученик',d:'Пройти тренировку'},
   {id:'act1',t:'Кровавый снег',d:'Пройти первый акт'},
+  {id:'double',t:'Два клинка',d:'Двойное убийство'},
+  {id:'chain3',t:'Серия',d:'Серия из трёх убийств в бою'},
   {id:'tail',t:'Тень',d:'Проследить за Кукушкой до конца'}];
 let achQ=[],achT=0;
 function ach(id){SAVE.ach=SAVE.ach||{};if(SAVE.ach[id])return;SAVE.ach[id]=1;saveProg();const a=ACH.find(a=>a.id===id);if(a){achQ.push(a);sfx('ok');haptic('success');}}
@@ -1378,7 +1398,7 @@ function buildTrain(){const w=152,h=20,GR=17;const m=[];for(let y=0;y<h;y++)m.pu
   house(71,80,10,6);for(let y=3;y<=9;y++)for(let x=74;x<=77;x++)bg[y][x]=7;fill(74,3,77,3,'R');fill(76,4,76,9,'|');// 6. каланча
   house(138,148,11,5);// 10. гладкая стена без трубы — для кошки-крюка
   const tx=x=>x*TS+8,ty=y=>y*TS;
-  const ent=[mkE0('cop',94,GR,1),mkE0('cop',106,GR,-1),mkE0('cop',128,GR,-1)];
+  const ent=[mkE0('cop',94,GR,1),mkE0('cop',106,GR,-1),mkE0('cop',111,GR,1),mkE0('cop',113,GR,1),mkE0('cop',128,GR,-1)];
   function mkE0(k,x,y,f){return {k,x:tx(x),y:ty(y),face:f,x1:tx(x),x2:tx(x)};}
   const items=[{k:'tea',x:tx(100),y:ty(GR)},{k:'knives',x:tx(88),y:ty(GR)}];
   const props=[{k:'hay',x:tx(84),y:ty(GR)},{k:'lamp',x:tx(4),y:ty(GR)},{k:'lamp',x:tx(98),y:ty(GR)},{k:'chim',x:tx(28),y:ty(10)},{k:'chim',x:tx(44),y:ty(8)},{k:'chim',x:tx(64),y:ty(11)},{k:'bell',x:tx(75)+8,y:ty(3)},{k:'flag',x:tx(146),y:ty(11)},{k:'lamp',x:tx(120),y:ty(GR)}];
@@ -1397,8 +1417,9 @@ function buildTrain(){const w=152,h=20,GR=17;const m=[];for(let y=0;y<h;y++)m.pu
     {x:tx(70),y:ty(11),fn:()=>hint('Каланча — точка обзора. Залезь по трубе на верх и жми '+U+' — синхронизация.')},
     {x:tx(76),y:ty(4),fn:()=>hint('Прыжок веры: прыгни с каланчи вправо — прямо в воз с сеном внизу.')},
     {x:tx(85),y:ty(GR+1),fn:()=>hint('Городовой стоит спиной. Подкрадись сзади и ударь — скрытый клинок убивает без шума. Толпа укроет.')},
-    {x:tx(99),y:ty(GR+1),fn:()=>{hint('Бой: держи БЛОК, а когда городовой ударит — жми УДАР: контрудар. БЛОК и направление — перекат.');for(const e of L.enemies)if(!e.dead&&Math.abs(e.x-P.x)<TS*12)alertE(e,1);G.alarms=0;}},
-    {x:tx(112),fn:()=>{hint('Подслушивание: встань в голубой круг у двоих и не бегай — полоска заполнится.');}},
+    {x:tx(99),y:ty(GR+1),fn:()=>{hint('Бой: держи БЛОК, а когда городовой ударит — жми УДАР: контрудар. БЛОК и направление — перекат.');for(const e of L.enemies)if(!e.dead&&Math.abs(e.x-P.x)<TS*9)alertE(e,1);G.alarms=0;}},
+    {x:tx(108),y:ty(GR+1),fn:()=>hint('Двое стоят рядом спиной — над ними красные метки. Подкрадись и жми УДАР: двойное убийство. А в бою после убийства есть миг, чтобы рывком добить следующего — серия.')},
+    {x:tx(115),fn:()=>{hint('Подслушивание: встань в голубой круг у двоих и не бегай — полоска заполнится.');}},
     {x:tx(124),fn:()=>{P.smokeN=Math.max(P.smokeN||0,1);P.wpn=3;toastTxt('Дымовая шашка +1');hint('Городовой смотрит на тебя. Оружие уже «Дым»: жми УДАР — облако ослепит его. Потом смени на клинок (значок слева вверху) и ударь в дыму.');}},
     {x:tx(134),fn:()=>{P.hookN=Math.max(P.hookN||0,1);toastTxt('Кошка-крюк +1');hint('Гладкая стена без трубы. Встань под краем крыши и держи '+U+' — Илья забросит кошку-крюк.');}},
     {x:tx(143),y:ty(12),fn:()=>finishTrain()}];
@@ -1673,7 +1694,7 @@ function update(){ST.t++;readInput();if(ST.scene!=='game'&&AU.ctx){if(AU.mus!=='
   if(G.syncT>0){G.syncT--;G.camX+=((G.tgt?0:0))*0;if(G.syncT===0)endSync();}
   if(G.slow>0){G.slow--;if(G.slow%2===1){updCam();return;}}
   if(G.hitstop>0){G.hitstop--;updFx();return;}
-  G.t++;updWeather();updMech();updPlayer();feel();updEnemies();updCrowds();updLife();updCodex();updGuide();updSide();updAct1();updKnives();updTarget();updItems();updFx();updCam();
+  G.t++;if(G.chainT>0){if(--G.chainT===0)G.chainN=1;}updWeather();updMech();updPlayer();feel();updEnemies();updCrowds();updLife();updCodex();updGuide();updSide();updAct1();updKnives();updTarget();updItems();updFx();updCam();
   G.vision+=((IN.v&&P.st!=='dead'?1:0)-G.vision)*0.15;
   if(G.shake>0)G.shake*=0.85;
   if(P.st==='dead'){G.deadT++;if(G.deadT>90)restoreCP();}}
@@ -1685,7 +1706,7 @@ function draw(){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#000';ctx.fillRect(
   const sh=G.shake>0.5?{x:rnd(-G.shake,G.shake)*0.4,y:rnd(-G.shake,G.shake)*0.4}:{x:0,y:0};const zz=Z*G.zoomK;
   ctx.save();ctx.translate(R(sh.x+(G.kick||0)*Z),R(sh.y));ctx.scale(zz,zz);ctx.translate(-G.camX,-G.camY);
   drawWater();drawTiles();for(const o of L.props)drawProp(o);drawLights();drawCps();for(const it of L.items)drawItem(it);
-  drawLifeBack();drawCrowds();drawLife();for(const e of L.enemies)drawEnemy(e);drawGuide();drawSideFG();drawAct1();drawClerk();drawMech();drawTarget();drawPlayer();drawFx();drawVision();for(const e of L.enemies)drawEnemyUI(e);
+  drawLifeBack();drawCrowds();drawLife();for(const e of L.enemies)drawEnemy(e);drawGuide();drawSideFG();drawAct1();drawClerk();drawMech();drawGroupMarks();drawTarget();drawPlayer();drawFx();drawVision();for(const e of L.enemies)drawEnemyUI(e);
   ctx.restore();
   drawSnowFG();drawRain();drawWeatherFG();drawVignette();
   {const hf=(G.hurtFlash||0)/22,low=P.hp<=2&&P.st!=='dead'?0.25+0.2*Math.sin(G.t*0.09):0,a=Math.max(hf*0.55,low);
@@ -1705,7 +1726,7 @@ let last=0,acc=0;function loop(ts){requestAnimationFrame(loop);if(!last)last=ts;
   while(acc>=1000/60){update();acc-=1000/60;}draw();}
 layout();requestAnimationFrame(loop);
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
-window.__strazha={get P(){return P},get L(){return L},get G(){return G},ST,IN,K,startMission,step:n=>{for(let i=0;i<(n||1);i++)update();},dlgNext,restoreCP,SAVE,tile,MISSIONS,nextWeapon,mapZoom,ACH,ach,useWhistle,finishMission,startSide,UPG,CODEX,buyUpg,CX,MAP,mapOpen,playMission,showAct,ACTS,get ACT(){return ST.act},dialog,QL,get TRKNOW(){return TCUR&&TCUR.k},get TBK(){return Object.keys(TB)},AU};
+window.__strazha={get P(){return P},pairTargets,get L(){return L},get G(){return G},ST,IN,K,startMission,step:n=>{for(let i=0;i<(n||1);i++)update();},dlgNext,restoreCP,SAVE,tile,MISSIONS,nextWeapon,mapZoom,ACH,ach,useWhistle,finishMission,startSide,UPG,CODEX,buyUpg,CX,MAP,mapOpen,playMission,showAct,ACTS,get ACT(){return ST.act},dialog,QL,get TRKNOW(){return TCUR&&TCUR.k},get TBK(){return Object.keys(TB)},AU};
 })();
 
 </script>
