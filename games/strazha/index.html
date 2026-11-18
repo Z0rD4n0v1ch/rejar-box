@@ -376,7 +376,7 @@ function updClimb(dir){const p=P;p.climbT=(p.climbT||0)+1;
   if(dir&&p.cm.k!=='wall'&&p.cm.k!=='pipe'){const nx=p.x+dir*1.1;if(canStay(nx,p.y)&&!boxHit(nx,p.y,PW,22,isSolid)){p.x=nx;moved=true;}p.face=dir;}
   else if(dir&&p.cm.k==='pipe'){const nx=p.x+dir*0.85;if(climbCell(Math.floor(nx/TS),Math.floor((p.y-12)/TS))){p.cm.k='face';p.x=nx;}p.face=dir;}
   if(moved)p.climb++;}
-function landCheck(){const fell=(P.y-P.fallY)/TS;const soft=hideAt(P.x,P.y);
+function landCheck(){const fell=(P.y-P.fallY)/TS;const soft=hideAt(P.x,P.y)||hideAt(P.x-5,P.y)||hideAt(P.x+5,P.y);
   if(soft){if(fell>3){fx('snow',P.x,P.y-6);sfx('land');if(fell>5){toastTxt('Прыжок веры!');ach('leap');}}return;}
   if(fell>13)die();else if(fell>8)damage(Math.ceil((fell-8)/2),P.x);else if(fell>2.5){sfx('land');P.land=8;if(fell>5)haptic('light');}}
 function updPlayer(){const p=P;p.anim++;if(p.inv>0)p.inv--;if(p.hurt>0)p.hurt--;if(p.noGrab>0)p.noGrab--;if(p.ctr>0)p.ctr--;if(p.kill>0)p.kill--;if(p.cj>0)p.cj--;if(p.land>0)p.land--;if(p.comboT>0)p.comboT--;
@@ -1360,6 +1360,9 @@ function drawClerk(){const c=L.clerk;if(!c)return;if(c.talk){if(c.runT==null)c.r
 function buildM5(){const w=204,h=26,GR=23;const B=lvl(w,h,GR),{m,bg,set,fill,house,tx,ty}=B;
   house(2,18,10,5);fill(19,11,19,GR-1,'|');house(30,46,12,2);fill(29,13,29,GR-1,'|');house(56,72,9,3);fill(73,10,73,GR-1,'|');house(84,100,13,4);house(112,128,10,6);fill(111,11,111,GR-1,'|');
   house(140,156,12,1);fill(157,13,157,GR-1,'|');house(166,180,11,8);fill(184,8,184,GR-1,'W');house(186,202,8,7);
+  for(const [x,r] of [[47,13],[55,10],[83,14],[101,14],[129,11],[139,13],[165,12],[181,12]])fill(x,r,x,GR-1,'|');// водостоки с обеих сторон каждого дома
+  for(const [a,b] of [[20,23],[26,28],[48,49],[52,54],[74,77],[80,82],[102,105],[108,110],[130,133],[136,138],[158,161],[164,164],[182,183]])fill(a,GR-1,b,GR-1,'s');// сугробы под краями крыш — мягкая посадка
+  for(const x of [24,25,50,51,78,79,106,107,134,135,162,163])set(x,20,'s');// снег на баррикадах
   for(const x of [24,25,50,51,78,79,106,107,134,135,162,163])for(let k=0;k<2;k++)set(x,22-k,'X');
   const ent=[];const E=o=>ent.push(o);
   E({k:'soldier',x:tx(40),y:ty(GR),face:-1,x1:tx(36),x2:tx(46),zone:1});E({k:'cop',x:tx(38),y:ty(12),face:-1,x1:tx(31),x2:tx(45),zone:1});
