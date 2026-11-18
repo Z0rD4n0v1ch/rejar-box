@@ -917,10 +917,20 @@ function drawDialog(){const d=ST.dlg;if(!d)return;const [who,s0]=d.lines[d.i];co
   if(d.cut){ctx.fillStyle='rgba(6,6,10,.95)';ctx.fillRect(0,0,W,H);const lines=wrap(shown,W-40,10);const y0=H/2-lines.length*7;
     lines.forEach((l,i)=>txt(l,W/2,y0+i*14,10,'#e8dcc0','center'));txt('▼',W/2,H-30,8,'rgba(232,220,192,'+(0.4+0.4*Math.sin(ST.t*0.1))+')','center');return;}
   if(d.mem){// «воспоминание»: белая дымка как в сценах признаний
-    const g=ctx.createRadialGradient(W/2,H*0.4,10,W/2,H*0.4,Math.max(W,H)*0.7);g.addColorStop(0,'rgba(250,248,242,.82)');g.addColorStop(1,'rgba(225,221,214,.97)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-    for(let i=0;i<30;i++){ctx.fillStyle='rgba(255,255,255,.6)';const a=hash(i,1)*TAU+ST.t*0.01;ctx.fillRect(W/2+Math.cos(a)*hash(i,2)*W*0.5,H*0.4+Math.sin(a)*hash(i,3)*H*0.4,1.5,1.5);}
-    ctx.save();ctx.translate(W/2,H*0.42);ctx.scale(2.6,2.6);if(!spr('ilya_crouch',-14,10,1))drawRig(-14,10,1,poseFor({k:'crouch'}),LOOK.ilya,0);if(!spr('agent_dead',12,10,-1))drawRig(10,10,-1,poseFor({k:'dead'}),LOOK.agent,0);ctx.restore();
-    setMusic('mem');}
+    const fy=R(H*0.5);// линия «пола» воспоминания
+    ctx.fillStyle='#e4e0d8';ctx.fillRect(0,0,W,H);// мир полностью скрыт — никаких «призраков»
+    const g=ctx.createRadialGradient(W/2,fy-20,10,W/2,fy-20,Math.max(W,H)*0.7);g.addColorStop(0,'rgba(255,253,248,1)');g.addColorStop(1,'rgba(214,209,200,1)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    // пол: снег на крыше, уходящий в дымку
+    const fg=ctx.createLinearGradient(0,fy,0,fy+40);fg.addColorStop(0,'rgba(170,176,190,.55)');fg.addColorStop(1,'rgba(214,209,200,0)');ctx.fillStyle=fg;ctx.fillRect(0,fy,W,40);
+    const lg=ctx.createLinearGradient(0,0,W,0);lg.addColorStop(0,'rgba(120,124,140,0)');lg.addColorStop(0.5,'rgba(120,124,140,.6)');lg.addColorStop(1,'rgba(120,124,140,0)');ctx.fillStyle=lg;ctx.fillRect(0,fy,W,1);
+    for(let i=0;i<34;i++){ctx.fillStyle='rgba(255,255,255,.75)';const a=hash(i,1)*TAU+ST.t*0.01;ctx.fillRect(W/2+Math.cos(a)*hash(i,2)*W*0.5,fy-30+Math.sin(a)*hash(i,3)*H*0.35,1.5,1.5);}
+    // тени под фигурами
+    ctx.fillStyle='rgba(60,62,80,.28)';ctx.beginPath();ctx.ellipse(W/2-34,fy+1,22,3.5,0,0,TAU);ctx.fill();ctx.beginPath();ctx.ellipse(W/2+30,fy+1,44,4,0,0,TAU);ctx.fill();
+    ctx.save();ctx.translate(W/2,fy);ctx.scale(2.6,2.6);
+    if(!spr('agent_dead',12,0,1))drawRig(12,0,1,poseFor({k:'dead'}),LOOK.agent,0);
+    if(!spr('ilya_crouch',-13,0,1))drawRig(-13,0,1,poseFor({k:'crouch'}),LOOK.ilya,0);ctx.restore();
+    setMusic('calm');}
+  else if(d.lines.some(l=>l[0]==='father'))setMusic('mem');// прощание с отцом — колыбельная «Отец"
   const h=66,y=H-h-6;panel(6,y,W-12,h,d.mem?'rgba(30,28,26,.88)':null);const [nm,col]=WHO[who];const pi={ilya:'p0',father:'p1',agent:'p2'}[who];let tx0=14;
   if(pi&&CITY.ok){cimg(pi,10,y+5,46,56);ctx.strokeStyle='#6a5232';ctx.strokeRect(10.5,y+5.5,46,56);tx0=62;}
   if(nm)txt(nm,tx0,y+12,8,col,'left',FD);
@@ -1093,7 +1103,7 @@ let last=0,acc=0;function loop(ts){requestAnimationFrame(loop);if(!last)last=ts;
   while(acc>=1000/60){update();acc-=1000/60;}draw();}
 layout();requestAnimationFrame(loop);
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
-window.__strazha={get P(){return P},get L(){return L},get G(){return G},ST,IN,K,startMission,step:n=>{for(let i=0;i<(n||1);i++)update();},dlgNext,restoreCP,SAVE,tile,MISSIONS,nextWeapon,MAP,mapOpen,playMission,showAct,ACTS,get ACT(){return ST.act},get TRKNOW(){return TCUR&&TCUR.k},get TBK(){return Object.keys(TB)},AU};
+window.__strazha={get P(){return P},get L(){return L},get G(){return G},ST,IN,K,startMission,step:n=>{for(let i=0;i<(n||1);i++)update();},dlgNext,restoreCP,SAVE,tile,MISSIONS,nextWeapon,MAP,mapOpen,playMission,showAct,ACTS,get ACT(){return ST.act},dialog,get TRKNOW(){return TCUR&&TCUR.k},get TBK(){return Object.keys(TB)},AU};
 })();
 
 </script>
