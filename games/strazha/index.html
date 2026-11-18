@@ -59,30 +59,31 @@ function button(label,x,y,w,h,fn,o){o=o||{};const hov=PT.over&&PT.x>=x&&PT.x<=x+
 
 /* ================= ЗВУК ================= */
 const AU={ctx:null,on:store.get('strazha_snd',true),mus:null,nextT:0,step:0,master:null};
-function auInit(){if(AU.ctx)return;try{AU.ctx=new (window.AudioContext||window.webkitAudioContext)();AU.master=AU.ctx.createGain();AU.master.gain.value=AU.on?0.5:0;AU.master.connect(AU.ctx.destination);}catch(e){}}
+function auInit(){if(AU.ctx)return;try{AU.ctx=new (window.AudioContext||window.webkitAudioContext)();AU.master=AU.ctx.createGain();AU.master.gain.value=AU.on?0.5:0;AU.master.connect(AU.ctx.destination);
+  AU.sfxG=AU.ctx.createGain();AU.sfxG.connect(AU.master);AU.musG=AU.ctx.createGain();AU.musG.gain.value=AU.musOn?1:0;AU.musG.connect(AU.master);ambInit();if(AU.mus)setMusic(AU.mus);setTimeout(()=>['night','mem','chase'].forEach(loadTrack),5000);}catch(e){}}
 function setSound(v){AU.on=v;store.set('strazha_snd',v);if(AU.master)AU.master.gain.value=v?0.5:0;}
 function tone(f,d,type,vol,slide,t0){if(!AU.ctx||!AU.on)return;const c=AU.ctx,t=t0||c.currentTime;const o=c.createOscillator(),g=c.createGain();
   o.type=type||'square';o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,slide),t+d);
-  g.gain.setValueAtTime(vol||0.15,t);g.gain.exponentialRampToValueAtTime(0.001,t+d);o.connect(g);g.connect(AU.master);o.start(t);o.stop(t+d+0.02);}
+  g.gain.setValueAtTime(vol||0.15,t);g.gain.exponentialRampToValueAtTime(0.001,t+d);o.connect(g);g.connect(AU.busNext||AU.sfxG||AU.master);o.start(t);o.stop(t+d+0.02);}
 function noise(d,vol,hp,t0){if(!AU.ctx||!AU.on)return;const c=AU.ctx,t=t0||c.currentTime,n=Math.floor(c.sampleRate*d);const b=c.createBuffer(1,n,c.sampleRate),a=b.getChannelData(0);
   for(let i=0;i<n;i++)a[i]=(Math.random()*2-1)*(1-i/n);const s=c.createBufferSource();s.buffer=b;const f=c.createBiquadFilter();f.type='highpass';f.frequency.value=hp||800;
-  const g=c.createGain();g.gain.value=vol||0.2;s.connect(f);f.connect(g);g.connect(AU.master);s.start(t);}
+  const g=c.createGain();g.gain.value=vol||0.2;s.connect(f);f.connect(g);g.connect(AU.busNext||AU.sfxG||AU.master);s.start(t);}
 const now=()=>AU.ctx?AU.ctx.currentTime:0;
 function sfx(k){switch(k){
   case'jump':noise(0.05,0.05,2000);tone(260,0.07,'triangle',0.05,420);break;case'land':noise(0.07,0.1,300);break;
   case'hit':noise(0.08,0.22,1200);tone(160,0.08,'sawtooth',0.08,80);break;
-  case'clang':tone(1300,0.14,'triangle',0.12,1000);tone(2100,0.08,'square',0.035);break;
+  case'clang':tone(1300,0.22,'triangle',0.12,1080);tone(1950,0.3,'sine',0.06,1900);tone(3100,0.12,'square',0.025);noise(0.05,0.12,3500);break;
   case'kill':noise(0.14,0.25,500);tone(240,0.25,'sawtooth',0.08,50);break;
   case'blade':tone(2600,0.06,'sawtooth',0.05,1200);noise(0.1,0.18,900,now()+0.05);break;
   case'shot':noise(0.3,0.38,180);tone(80,0.25,'square',0.12,35);break;
   case'hurt':tone(190,0.2,'sawtooth',0.12,70);break;case'throw':noise(0.08,0.12,3000);break;
   case'pick':{const k=Math.pow(1.06,Math.min(12,(G&&G.coinN)||0));tone(880*k,0.07,'square',0.06);tone(1320*k,0.1,'square',0.05,null,now()+0.06);break;}
-  case'step':noise(0.05,0.035,2600);break;case'tin':tone(700+Math.random()*200,0.04,'triangle',0.03);noise(0.03,0.03,4000);break;
+  case'step':noise(0.045,0.04,1800+Math.random()*900);noise(0.03,0.025,4200,now()+0.025);break;case'tin':tone(700+Math.random()*200,0.04,'triangle',0.03);noise(0.03,0.03,4000);break;
   case'heart':tone(55,0.12,'sine',0.16);tone(50,0.14,'sine',0.13,null,now()+0.16);break;case'whoosh2':noise(0.09,0.06,1800);break;
   case'alert':tone(560,0.09,'square',0.08);tone(840,0.14,'square',0.08,null,now()+0.09);break;
   case'whistle':tone(2400,0.4,'sine',0.07,2700);break;case'grab':noise(0.04,0.08,1500);break;
   case'eagle':tone(2200,0.5,'sine',0.08,1300);tone(2600,0.35,'sine',0.05,1500,now()+0.25);break;
-  case'sync':for(let i=0;i<5;i++)tone(440*Math.pow(1.26,i),0.4,'triangle',0.05,null,now()+i*0.08);break;
+  case'sync':for(let i=0;i<5;i++)tone(440*Math.pow(1.26,i),0.4,'triangle',0.05,null,now()+i*0.08);bell(0.06);break;
   case'whoosh':noise(0.5,0.12,600);break;case'roll':noise(0.12,0.08,700);break;
   case'ok':tone(523,0.1,'square',0.06);tone(784,0.18,'square',0.06,null,now()+0.1);break;}}
 const MUS={
@@ -91,7 +92,8 @@ const MUS={
   chase:{bpm:140,bass:[38,50,38,50,41,53,41,53,36,48,36,48,40,52,40,52],mel:[74,77,81,0,79,77,76,0,74,0,72,74,76,0,0,0,74,77,81,0,82,81,79,77,76,0,79,0,81,0,0,0]},
   mem:{bpm:60,bass:[45,0,52,0,48,0,52,0,43,0,50,0,47,0,52,0],mel:[81,0,0,0,79,0,76,0,77,0,0,0,76,0,74,0,72,0,0,0,74,0,76,0,69,0,0,0,0,0,0,0]}};
 function midi(n){return 440*Math.pow(2,(n-69)/12);}
-function musicTick(){if(!AU.ctx||!AU.on||!AU.mus)return;const c=AU.ctx,m=MUS[AU.mus];const sp=60/m.bpm/2;
+function musicTick(){ambTick();if(!AU.ctx||!AU.on||!AU.mus)return;if(hasTrack()){AU.nextT=0;return;}const c=AU.ctx,m=MUS[AU.mus];const sp=60/m.bpm/2;AU.busNext=AU.musG;try{musicTick2(c,m,sp);}finally{AU.busNext=null;}}
+function musicTick2(c,m,sp){
   if(AU.nextT<c.currentTime)AU.nextT=c.currentTime+0.05;
   while(AU.nextT<c.currentTime+0.2){const i=AU.step%32;
     if(i%2===0){const b=m.bass[(i>>1)%16];if(b)tone(midi(b),sp*1.8,'triangle',0.09,null,AU.nextT);}
@@ -99,7 +101,33 @@ function musicTick(){if(!AU.ctx||!AU.on||!AU.mus)return;const c=AU.ctx,m=MUS[AU.
     if((AU.mus==='tense'||AU.mus==='chase')&&i%4===2)noise(0.04,0.05,3000,AU.nextT);
     if(AU.mus==='chase'&&i%8===0)noise(0.09,0.09,120,AU.nextT);
     AU.nextT+=sp;AU.step++;}}
-function setMusic(k){if(AU.mus!==k){AU.mus=k;AU.step=0;}}
+// ---- записанная музыка (Suno), с плавной сменой; пока трек не загружен — играет чиптюн выше ----
+const TRK={theme:'snd/theme.mp3',night:'snd/night.mp3',chase:'snd/chase.mp3',mem:'snd/mem.mp3'};
+const TRKV={theme:0.55,night:0.5,chase:0.5,mem:0.55};
+const TB={},TL={};let TCUR=null;// буферы, загрузка, текущий {k,src,g}
+AU.musOn=store.get('strazha_mus',true);
+function trackFor(k){return k==='calm'?(ST.scene==='game'?'night':'theme'):k==='tense'||k==='chase'?'chase':k;}
+function loadTrack(k){if(TB[k]||TL[k]||!AU.ctx)return;TL[k]=1;
+  fetch(TRK[k]).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer();}).then(b=>new Promise((ok,no)=>AU.ctx.decodeAudioData(b,ok,no))).then(buf=>{TB[k]=buf;if(trackFor(AU.mus)===k)playTrack(k);}).catch(()=>{TL[k]=2;});}
+function playTrack(k){const c=AU.ctx;if(!c||!AU.musG)return;if(TCUR&&TCUR.k===k)return;const t=c.currentTime;
+  if(TCUR){const o=TCUR;o.g.gain.cancelScheduledValues(t);o.g.gain.setValueAtTime(o.g.gain.value,t);o.g.gain.linearRampToValueAtTime(0,t+1.2);try{o.src.stop(t+1.3);}catch(e){}TCUR=null;}
+  if(!k||!TB[k])return;const src=c.createBufferSource();src.buffer=TB[k];src.loop=true;const g=c.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(TRKV[k]||0.5,t+1.5);
+  src.connect(g);g.connect(AU.musG);src.start(t);TCUR={k,src,g};}
+function hasTrack(){const k=trackFor(AU.mus);return !!(k&&TB[k]);}
+function setMusic(k){if(AU.mus!==k){AU.mus=k;AU.step=0;}const tk=trackFor(k);if(!TCUR||TCUR.k!==tk){if(TB[tk])playTrack(tk);else{if(TCUR)playTrack(null);loadTrack(tk);}}}
+function setMus(v){AU.musOn=v;store.set('strazha_mus',v);if(AU.musG)AU.musG.gain.value=v?1:0;}
+// ---- атмосфера: ветер, далёкий колокол, гул толпы ----
+const AMB={wind:null,crowd:null,bellT:0};
+function ambInit(){const c=AU.ctx;if(!c||AMB.wind)return;const n=c.sampleRate*4,b=c.createBuffer(1,n,c.sampleRate),a=b.getChannelData(0);let l=0;
+  for(let i=0;i<n;i++){l=l*0.985+(Math.random()*2-1)*0.06;a[i]=l;}// мягкий «бурый» шум
+  const mk=(type,f,q)=>{const s=c.createBufferSource();s.buffer=b;s.loop=true;s.playbackRate.value=0.7+Math.random()*0.6;const fl=c.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=c.createGain();g.gain.value=0;s.connect(fl);fl.connect(g);g.connect(AU.sfxG);s.start();return {s,fl,g};};
+  AMB.wind=mk('bandpass',500,0.7);AMB.crowd=mk('bandpass',380,2.2);}
+function ambTick(){const c=AU.ctx;if(!c||!AMB.wind)return;const t=c.currentTime,inG=ST.scene==='game'&&!ST.modal;
+  const wv=inG?0.22+0.12*Math.sin(t*0.31)+0.06*Math.sin(t*1.7):0.0;AMB.wind.g.gain.setTargetAtTime(wv*(P&&P.y<10*TS?1.5:1),t,0.4);AMB.wind.fl.frequency.setTargetAtTime(420+260*Math.sin(t*0.23),t,0.5);
+  let cv=0;if(inG&&L&&L.crowds&&P){for(const cr of L.crowds){if(cr.gone)continue;const d=Math.hypot(cr.x-P.x,(cr.y||P.y)-P.y);cv=Math.max(cv,clamp(1-d/(TS*14),0,1));}}
+  AMB.crowd.g.gain.setTargetAtTime(cv*0.5,t,0.3);
+  if(inG&&ST.t>AMB.bellT){AMB.bellT=ST.t+60*(14+Math.random()*16);if(ST.t>600)bell(0.05);}}
+function bell(v){const t=now();for(const [f,k] of [[196,1],[392,0.5],[588,0.3],[784,0.18]])tone(f*(1+Math.random()*0.003),3.2,'sine',v*k,null,t);}
 
 /* ================= ВВОД ================= */
 const K={},PT={x:0,y:0,over:false};const TOUCH={};let kbd=false;
@@ -914,6 +942,7 @@ function drawTitle(){UI=[];const t=ST.t;const g=ctx.createLinearGradient(0,0,0,H
   const w=150,x=(W-w)/2;let y=R(Math.min(H*0.68,H-150));const any=Object.keys(SAVE.m).length>0;
   button(any?'КАРТА МИССИЙ':'НАЧАТЬ ИГРУ',x,y,w,22,()=>{auInit();if(any)mapOpen();else playMission(1);},{hot:1,size:9});y+=28;
   button('ЗВУК: '+(AU.on?'ВКЛ':'ВЫКЛ'),x,y,w,18,()=>{auInit();setSound(!AU.on);});y+=24;
+  button('МУЗЫКА: '+(AU.musOn?'ВКЛ':'ВЫКЛ'),x,y,w,18,()=>{auInit();setMus(!AU.musOn);});y+=24;
   button('КНОПКИ: '+(CFG.big?'КРУПНЫЕ':'ОБЫЧНЫЕ'),x,y,w,18,()=>{CFG.big=CFG.big?0:1;store.set('strazha_cfg',CFG);});y+=24;
   button('ВСЕ ИГРЫ REJAR BOX',x,y,w,18,()=>{location.href='../../';});
   txt('Ранняя версия · миссия 1 из 15',W/2,H-8,6,'rgba(232,220,192,.55)','center');}
@@ -1015,7 +1044,7 @@ function drawPause(){ctx.fillStyle='rgba(6,8,12,.82)';ctx.fillRect(0,0,W,H);cons
   button('ПРОДОЛЖИТЬ',x,y,w,20,()=>{ST.modal=null;},{hot:1});y+=26;
   button('С КОНТРОЛЬНОЙ ТОЧКИ',x,y,w,18,()=>{ST.modal=null;restoreCP();});y+=24;
   button('МИССИЯ ЗАНОВО',x,y,w,18,()=>{startMission(L.mi);});y+=24;
-  button('ЗВУК: '+(AU.on?'ВКЛ':'ВЫКЛ'),x,y,w,18,()=>setSound(!AU.on));y+=24;
+  button('ЗВУК: '+(AU.on?'ВКЛ':'ВЫКЛ'),x,y,w/2-2,18,()=>setSound(!AU.on),{size:7});button('МУЗЫКА: '+(AU.musOn?'ВКЛ':'ВЫКЛ'),x+w/2+2,y,w/2-2,18,()=>setMus(!AU.musOn),{size:7});y+=24;
   button('В ГЛАВНОЕ МЕНЮ',x,y,w,18,()=>{ST.scene='title';ST.modal=null;ST.menu='main';setMusic('calm');});y+=28;
   wrap(kbd||!('ontouchstart' in window)?'Стрелки — движение и лазание, пробел — прыжок, J — удар, K — блок (K + стрелка — перекат), L — чутьё, Q — оружие.':'Касание значка оружия слева вверху — смена оружия. БЛОК + направление — перекат.',w,6).forEach((l,i)=>txt(l,W/2,y+i*8,6,'#998','center'));}
 function drawResult(){ctx.fillStyle='rgba(6,8,12,.9)';ctx.fillRect(0,0,W,H);const r=G.result,w=190,x=(W-w)/2;let y=H*0.15;
@@ -1029,7 +1058,7 @@ function drawResult(){ctx.fillStyle='rgba(6,8,12,.9)';ctx.fillRect(0,0,W,H);cons
   button('ПЕРЕИГРАТЬ',x,y,w,18,()=>startMission(L.mi));}
 
 /* ================= ЦИКЛ ================= */
-function update(){ST.t++;readInput();musicTick();if(ST.scene==='act'&&ST.act)ST.act.t++;
+function update(){ST.t++;readInput();if(ST.scene!=='game'&&AU.ctx){if(AU.mus!=='calm')setMusic('calm');else if(TB.theme){if(!TCUR||TCUR.k!=='theme')playTrack('theme');}else loadTrack('theme');}musicTick();if(ST.scene==='act'&&ST.act)ST.act.t++;
   if(ST.scene!=='game')return;
   if(ST.dlg||ST.modal)return;
   if(G.syncT>0){G.syncT--;G.camX+=((G.tgt?0:0))*0;if(G.syncT===0)endSync();}
@@ -1064,7 +1093,7 @@ let last=0,acc=0;function loop(ts){requestAnimationFrame(loop);if(!last)last=ts;
   while(acc>=1000/60){update();acc-=1000/60;}draw();}
 layout();requestAnimationFrame(loop);
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
-window.__strazha={get P(){return P},get L(){return L},get G(){return G},ST,IN,K,startMission,step:n=>{for(let i=0;i<(n||1);i++)update();},dlgNext,restoreCP,SAVE,tile,MISSIONS,nextWeapon,MAP,mapOpen,playMission,showAct,ACTS,get ACT(){return ST.act}};
+window.__strazha={get P(){return P},get L(){return L},get G(){return G},ST,IN,K,startMission,step:n=>{for(let i=0;i<(n||1);i++)update();},dlgNext,restoreCP,SAVE,tile,MISSIONS,nextWeapon,MAP,mapOpen,playMission,showAct,ACTS,get ACT(){return ST.act},get TRKNOW(){return TCUR&&TCUR.k},get TBK(){return Object.keys(TB)},AU};
 })();
 
 </script>
