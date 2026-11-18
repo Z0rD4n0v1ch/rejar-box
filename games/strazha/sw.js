@@ -1,7 +1,7 @@
 // Ночная стража — офлайн-кэш ТОЛЬКО для папки games/strazha/ (корень сайта не трогает).
 // При обновлении игры меняй VERSION.
-const VERSION='strazha-v19';
-const FILES=['./','./index.html','./manifest.webmanifest','./cover.png','./icon-192.png','./icon-512.png','./art/act1.jpg','./art/act2.jpg','./art/act3.jpg','./art/map.jpg'];
+const VERSION='strazha-v20';
+const FILES=['./','./index.html','./manifest.webmanifest','./cover.png','./icon-192.png','./icon-512.png','./art/act1.jpg','./art/act2.jpg','./art/act3.jpg','./art/map.jpg','./art/atlas.png','./art/city.png','./art/sky_far.png','./art/city_mid.png','./art/city_mid_warm.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith('strazha-')&&k!==VERSION).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',e=>{
