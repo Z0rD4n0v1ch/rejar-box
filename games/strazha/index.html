@@ -126,7 +126,7 @@ function ambInit(){const c=AU.ctx;if(!c||AMB.wind)return;const n=c.sampleRate*4,
   const mk=(type,f,q)=>{const s=c.createBufferSource();s.buffer=b;s.loop=true;s.playbackRate.value=0.7+Math.random()*0.6;const fl=c.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=c.createGain();g.gain.value=0;s.connect(fl);fl.connect(g);g.connect(AU.sfxG);s.start();return {s,fl,g};};
   AMB.wind=mk('bandpass',500,0.7);AMB.crowd=mk('bandpass',380,2.2);}
 function ambTick(){const c=AU.ctx;if(!c||!AMB.wind)return;const t=c.currentTime,inG=ST.scene==='game'&&!ST.modal;
-  const wv=inG?0.22+0.12*Math.sin(t*0.31)+0.06*Math.sin(t*1.7):0.0;AMB.wind.g.gain.setTargetAtTime(wv*(P&&P.y<10*TS?1.5:1),t,0.4);AMB.wind.fl.frequency.setTargetAtTime(420+260*Math.sin(t*0.23),t,0.5);
+  const wv=inG?0.22+0.12*Math.sin(t*0.31)+0.06*Math.sin(t*1.7):0.0;if(!inG)AMB.wind.g.gain.setTargetAtTime(wv,t,0.4);AMB.wind.fl.frequency.setTargetAtTime(420+260*Math.sin(t*0.23),t,0.5);
   let cv=0;if(inG&&L&&L.crowds&&P){for(const cr of L.crowds){if(cr.gone)continue;const d=Math.hypot(cr.x-P.x,(cr.y||P.y)-P.y);cv=Math.max(cv,clamp(1-d/(TS*14),0,1));}}
   AMB.crowd.g.gain.setTargetAtTime(cv*0.5,t,0.3);
   if(inG&&ST.t>AMB.bellT){AMB.bellT=ST.t+60*(14+Math.random()*16);if(ST.t>600)bell(0.05);}}
@@ -274,7 +274,7 @@ function buildM1(){const w=212,h=26,GR=23;const m=[];for(let y=0;y<h;y++)m.push(
     {k:'boy',x:tx(120),y:ty(GR),x1:tx(114),x2:tx(136),sp:0.45},{k:'dog',x:tx(150),y:ty(GR),x1:tx(142),x2:tx(166),sp:0.4},
     {k:'cab',x:tx(100),y:ty(GR),x1:tx(96),x2:tx(170),sp:0.9,face:1}];
   const flocks=[{x:tx(118),y:ty(12),w:40,n:4},{x:tx(150),y:ty(10),w:30,n:3},{x:tx(60),y:ty(GR),w:30,n:4},{x:tx(186),y:ty(14),w:36,n:3},{x:tx(36),y:ty(13),w:24,n:3}];
-  return {w,h,map:m,bg,ent,items,props,cps,hides,wires,crowds,views,target,trig,life,flocks,name:'Нарвские ворота',par:420,startX:tx(3),startY:ty(GR),GR};}
+  return {w,h,map:m,bg,ent,items,props,cps,hides,wires,crowds,views,target,trig,life,flocks,dawn:1,name:'Нарвские ворота',par:420,startX:tx(3),startY:ty(GR),GR};}
 
 const MISSIONS=[
   {n:1,name:'Нарвские ворота',year:'Январь 1905, Петербург',build:buildM1,
@@ -288,7 +288,7 @@ const EHP={cop:3,soldier:3,officer:5,line:99};
 function mkEnemy(o){return {...o,hp:EHP[o.k],st:'patrol',meter:0,t:0,cd:0,stun:0,aim:0,wind:0,lost:0,dead:0,dt:0,face:o.face||1,anim:0,x1:o.x1==null?o.x:o.x1,x2:o.x2==null?o.x:o.x2,heavyN:0,pose:null,wait:0};}
 function mkCrowd(c){const ms=[];for(let i=0;i<c.n;i++)ms.push({dx:(i-(c.n-1)/2)*7+rnd(-2,2),ph:rnd(0,TAU),look:i%3,woman:i%2===1});return {...c,ms,gone:0};}
 function startMission(n){const M=MISSIONS[n-1];if(!M.build)return;L=M.build();L.mi=n;
-  G={t:0,kills:0,silent:0,alarms:0,retries:0,rub:0,part:0,cp:0,flags:{},trigDone:{},shake:0,fx:[],snow:[],vision:0,done:0,deadT:0,camX:0,camY:0,slow:0,zoomK:1,tok:null,knives:[],sync:0,tgt:null};
+  G={t:0,kills:0,silent:0,alarms:0,retries:0,rub:0,part:0,cp:0,flags:{},trigDone:{},shake:0,fx:[],snow:[],vision:0,done:0,deadT:0,camX:0,camY:0,slow:0,zoomK:1,tok:null,knives:[],sync:0,tgt:null};wxInit();
   L.enemies=L.ent.map(mkEnemy);L.crowds=L.crowds.map(mkCrowd);L.life=(L.life||[]).map(mkLife);L.flocks=(L.flocks||[]).map(mkFlock);cityPrep();L.softs=L.hides.map(h=>({x:h.x,y:h.y,w:h.w}));
   for(let y=0;y<L.h;y++){let x=0;while(x<L.w){if(L.map[y][x]==='s'){let x2=x;while(x2+1<L.w&&L.map[y][x2+1]==='s')x2++;L.softs.push({x:(x+x2+1)*TS/2,y:(y+1)*TS,w:(x2-x+1)*TS});x=x2+1;}else x++;}}
   P=newPlayer(L.startX,L.startY);snapCP();
@@ -475,7 +475,7 @@ function feel(){const p=P;if(p.sq==null)p.sq=1;p.sq+=(1-p.sq)*0.25;if(G.coinT>0)
 /* ================= ВРАГИ ================= */
 const RANGE={cop:84,soldier:120,officer:90,line:150};
 function canSee(e){if(P.st==='dead'||P.hidden)return false;const dx=P.x-e.x,dy=P.y-e.y;
-  if(Math.abs(dy)>34)return false;if(dx*e.face<-6)return false;if(Math.abs(dx)>RANGE[e.k])return false;
+  if(Math.abs(dy)>34)return false;if(dx*e.face<-6)return false;if(Math.abs(dx)>RANGE[e.k]*(e.k==='line'?1:wxView()))return false;
   const ty=Math.floor((e.y-18)/TS);for(let x=Math.min(e.x,P.x);x<Math.max(e.x,P.x);x+=8)if(isSolid(Math.floor(x/TS),ty))return false;return true;}
 function alertE(e,quiet){if(e.st!=='alert'){e.st='alert';e.popT=14;e.lost=0;e.meter=1;G.alarms++;if(!quiet)sfx('alert');}e.face=sgn(P.x-e.x)||e.face;}
 function enemyStrike(e,heavy){const dx=P.x-e.x;e.cd=45+R(rnd(0,30));if(G.tok===e)G.tok=null;
@@ -580,7 +580,7 @@ function endSync(){P.st='stand';setObj('Человек в штатском — �
 function fx(k,x,y,o){if(k==='dust'){const n=(o&&o.n)||5;for(let i=0;i<n;i++)G.fx.push({k:'pt',c:i%2?'#e8eef6':'#c4cede',x:x+rnd(-4,4),y:y-1,vx:rnd(-1.2,1.2)*(o&&o.small?0.5:1),vy:rnd(-1.4,-0.3)*(o&&o.small?0.6:1),t:0,life:rnd(12,24)});return;}
   G.fx.push({k,x,y,t:0,...(o||{})});if(k==='blood'||k==='snow'||k==='spark'){for(let i=0;i<(k==='snow'?16:k==='spark'?5:10);i++)G.fx.push({k:'pt',c:k==='blood'?'#7a1010':k==='snow'?'#eef':'#ffd060',x,y,vx:rnd(-1.6,1.6),vy:rnd(-2.6,-0.4),t:0,life:rnd(18,40)});}}
 function updFx(){for(const f of G.fx){f.t++;if(f.k==='pt'){f.x+=f.vx;f.y+=f.vy;f.vy+=0.15;}}G.fx=G.fx.filter(f=>f.k==='pt'?f.t<f.life:f.t<(f.k==='tracer'?8:f.k==='flash'?6:f.k==='slash'?9:20));
-  for(const s of G.snow){s.y+=s.s*0.7;s.x+=Math.sin(G.t*0.01+s.d)*0.35-0.2;if(s.y>H+5){s.y=-5;s.x=Math.random()*W;}if(s.x<-5)s.x=W+5;}}
+  const wk=(G.wx&&G.wx.int)||0;for(const s of G.snow){s.y+=s.s*(0.7+1.6*wk);s.x+=Math.sin(G.t*0.01+s.d)*0.35-0.2-3.2*wk*s.s;if(s.y>H+5){s.y=-5;s.x=Math.random()*W;}if(s.x<-5)s.x=W+5;}}
 function camTarget(){const zk=G.zoomK;const vw=VW/zk,vh=VH/zk;const look=P.st==='climb'?0:P.face*vw*0.12;
   return {x:clamp(P.x-vw/2+look,0,L.w*TS-vw),y:clamp(P.y-vh*(portrait?0.42:0.58)-(P.st==='climb'&&IN.u?vh*0.12:0),-70,L.h*TS-vh+(portrait?100/Z:20))};}
 function camSnap(){G.zoomK=1;const c=camTarget();G.camX=c.x;G.camY=c.y;}
@@ -764,7 +764,7 @@ function drawTiles(){const x0=Math.floor(G.camX/TS),x1=Math.ceil((G.camX+VW/G.zo
     if(ty===L.GR-1&&tx%4===1){ctx.fillStyle='#16120e';ctx.fillRect(sx+2,sy+1,12,15);ctx.fillStyle='#3a2a1c';ctx.fillRect(sx+3,sy+2,10,14);}
     if(S.tower&&ty%2===0){ctx.fillStyle='#3a1a14';ctx.fillRect(sx,sy+7,TS,1);}
     if(top&&!S.yard){ctx.fillStyle='rgba(255,255,255,.06)';ctx.fillRect(sx,sy,TS,2);}}
-  if(cityOn){ctx.globalCompositeOperation='multiply';ctx.fillStyle='#5a6284';
+  if(cityOn){ctx.globalCompositeOperation='multiply';{const d=(G.wx&&L.dawn)?G.wx.dawn:0;ctx.fillStyle='rgb('+R(90+70*d)+','+R(98+52*d)+','+R(132+18*d)+')';}
     for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){if(tx<0||tx>=L.w)continue;const b=L.bg[ty][tx];if(b&&b!==10)ctx.fillRect(tx*TS,ty*TS,TS,TS);}
     ctx.globalCompositeOperation='lighter';for(const [gx,gy] of L._glow){const g=ctx.createRadialGradient(gx,gy,1,gx,gy,16);g.addColorStop(0,'rgba(255,190,100,.35)');g.addColorStop(1,'rgba(255,190,100,0)');ctx.fillStyle=g;ctx.fillRect(gx-16,gy-16,32,32);}
     ctx.globalCompositeOperation='source-over';}
@@ -968,6 +968,26 @@ function drawMissionList(){ctx.fillStyle='rgba(8,8,12,.88)';ctx.fillRect(0,0,W,H
   for(const [an,s] of acts){txt(an,18,y+8,6,'#b8a070','left',FD);y+=11;for(let i=s;i<s+5;i++){const M=MISSIONS[i],ok=!!M.build,r=SAVE.m[M.n];
       button((M.n+'. '+M.name)+(r?'  ['+r.rank+']':''),16,y,W-32,rh-2,()=>startMission(M.n),{size:7,dis:!ok});if(!ok)txt('скоро',W-22,y+rh/2+2,6,'#776','right');y+=rh;}y+=2;}
   button('НАЗАД',W/2-40,H-30,80,18,()=>{ST.menu='main';},{size:7});}
+/* ================= ПОГОДА: МЕТЕЛЬ И РАССВЕТ ================= */
+function wxInit(){G.wx={int:0,on:0,t:0,next:60*45,dur:0,told:0,dawn:0,maxX:0};}
+function updWeather(){const w=G.wx;if(!w)return;w.t++;
+  if(!w.on){if(--w.next<=0&&!G.syncT&&P.st!=='dead'){w.on=1;w.dur=60*rnd(22,32);if(!w.told){w.told=1;hint('Метель! Солдаты видят хуже — самое время проскользнуть мимо.');}}}
+  else if(--w.dur<=0){w.on=0;w.next=60*rnd(70,110);}
+  w.int+=((w.on?1:0)-w.int)*(w.on?0.006:0.004);if(w.int<0.002)w.int=0;
+  // рассвет: чем дальше Илья ушёл от ворот, тем светлее небо
+  if(L.dawn){w.maxX=Math.max(w.maxX,P.x/(L.w*TS));const d=clamp((w.maxX-0.3)/0.6,0,1);w.dawn+=(d-w.dawn)*0.01;}
+  const want=Math.round(90+170*w.int);while(G.snow.length<want)G.snow.push({x:Math.random()*W,y:Math.random()*H,s:rnd(0.3,1.2),d:rnd(0,TAU)});if(G.snow.length>want)G.snow.length=want;
+  if(AMB.wind&&AU.ctx)AMB.wind.g.gain.setTargetAtTime((0.22+0.12*Math.sin(AU.ctx.currentTime*0.31))*(1+2.2*w.int)*(P.y<10*TS?1.5:1),AU.ctx.currentTime,0.4);}
+function wxView(){return 1-0.45*((G.wx&&G.wx.int)||0);}
+function drawWeatherFG(){const w=G.wx;if(!w)return;const k=w.int;
+  if(k>0.01){ctx.fillStyle='rgba(222,230,244,'+(0.3*k)+')';ctx.fillRect(0,0,W,H);
+    for(let i=0;i<4;i++){const y=((i*0.27+G.t*0.0007*(1+i*0.3))%1.2-0.1)*H,g=ctx.createLinearGradient(0,y-30,0,y+30);g.addColorStop(0,'rgba(235,240,250,0)');g.addColorStop(0.5,'rgba(235,240,250,'+(0.22*k)+')');g.addColorStop(1,'rgba(235,240,250,0)');ctx.fillStyle=g;ctx.fillRect(0,y-30,W,60);}
+    ctx.strokeStyle='rgba(245,248,255,'+(0.5*k)+')';ctx.lineWidth=1;ctx.beginPath();for(let i=0;i<G.snow.length;i+=2){const s=G.snow[i];ctx.moveTo(s.x,s.y);ctx.lineTo(s.x+6*k*s.s,s.y-2*k*s.s);}ctx.stroke();}
+  if(L.dawn&&w.dawn>0.01){const d=w.dawn;ctx.globalCompositeOperation='soft-light';ctx.fillStyle='rgba(255,170,130,'+(0.45*d)+')';ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over';}
+  if(k>0.35){ctx.globalAlpha=Math.min(1,(k-0.35)*3);ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(W/2-32,18,64,10);txt('❄ МЕТЕЛЬ',W/2,26,6,'#e8f0ff','center',FD);ctx.globalAlpha=1;}}
+function drawDawnSky(){const w=G.wx;if(!w||!L.dawn||w.dawn<0.01)return;const d=w.dawn;
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba(70,80,130,'+(0.35*d)+')');g.addColorStop(0.55,'rgba(200,120,130,'+(0.45*d)+')');g.addColorStop(0.8,'rgba(250,170,110,'+(0.55*d)+')');g.addColorStop(1,'rgba(250,200,150,'+(0.5*d)+')');
+  ctx.globalCompositeOperation='screen';ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over';}
 /* ================= ЖИВОЙ ГОРОД ================= */
 const LIFE_SAY={dvornik:['Снегу-то намело…','Метёшь тут, метёшь…'],baba:['Калачи горячие!','Сбитень, сбитень горячий!'],boy:['Свежие газеты!','Читайте, читайте!'],cab:['Посторонись!','Э-эй, берегись!'],dog:[]};
 const LIFE_ROOF={dvornik:'Эй! С крыши слезь!',baba:'Ишь, по крышам скачет…',boy:'Гляди, по крышам бегает!',dog:'',cab:''};
@@ -1126,7 +1146,7 @@ function update(){ST.t++;readInput();if(ST.scene!=='game'&&AU.ctx){if(AU.mus!=='
   if(G.syncT>0){G.syncT--;G.camX+=((G.tgt?0:0))*0;if(G.syncT===0)endSync();}
   if(G.slow>0){G.slow--;if(G.slow%2===1){updCam();return;}}
   if(G.hitstop>0){G.hitstop--;updFx();return;}
-  G.t++;updPlayer();feel();updEnemies();updCrowds();updLife();updKnives();updTarget();updItems();updFx();updCam();
+  G.t++;updWeather();updPlayer();feel();updEnemies();updCrowds();updLife();updKnives();updTarget();updItems();updFx();updCam();
   G.vision+=((IN.v&&P.st!=='dead'?1:0)-G.vision)*0.15;
   if(G.shake>0)G.shake*=0.85;
   if(P.st==='dead'){G.deadT++;if(G.deadT>90)restoreCP();}}
@@ -1134,13 +1154,13 @@ function draw(){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#000';ctx.fillRect(
   ctx.setTransform(SC*DPR,0,0,SC*DPR,OX*DPR,OY*DPR);ctx.imageSmoothingEnabled=false;ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();UI=[];
   if(ST.scene==='title'){drawTitle();return;}
   if(ST.scene==='act'){drawAct();return;}
-  drawSky();
+  drawSky();drawDawnSky();
   const sh=G.shake>0.5?{x:rnd(-G.shake,G.shake)*0.4,y:rnd(-G.shake,G.shake)*0.4}:{x:0,y:0};const zz=Z*G.zoomK;
   ctx.save();ctx.translate(R(sh.x+(G.kick||0)*Z),R(sh.y));ctx.scale(zz,zz);ctx.translate(-G.camX,-G.camY);
   drawTiles();for(const o of L.props)drawProp(o);drawLights();drawCps();for(const it of L.items)drawItem(it);
   drawLifeBack();drawCrowds();drawLife();for(const e of L.enemies)drawEnemy(e);drawTarget();drawPlayer();drawFx();drawVision();for(const e of L.enemies)drawEnemyUI(e);
   ctx.restore();
-  drawSnowFG();drawVignette();
+  drawSnowFG();drawWeatherFG();drawVignette();
   {const hf=(G.hurtFlash||0)/22,low=P.hp<=2&&P.st!=='dead'?0.25+0.2*Math.sin(G.t*0.09):0,a=Math.max(hf*0.55,low);
    if(a>0.01){const g=ctx.createRadialGradient(W/2,H*0.45,Math.min(W,H)*0.25,W/2,H*0.45,Math.max(W,H)*0.7);g.addColorStop(0,'rgba(160,0,0,0)');g.addColorStop(1,'rgba(160,0,0,'+a+')');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}}
   if(G.slow>0){ctx.fillStyle='rgba(255,240,220,'+(G.slow/22)*0.12+')';ctx.fillRect(0,0,W,H);}
