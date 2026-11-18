@@ -72,7 +72,7 @@ const now=()=>AU.ctx?AU.ctx.currentTime:0;
 function sfx(k){switch(k){
   case'jump':noise(0.05,0.05,2000);tone(260,0.07,'triangle',0.05,420);break;case'land':noise(0.07,0.1,300);break;
   case'hit':noise(0.08,0.22,1200);tone(160,0.08,'sawtooth',0.08,80);break;
-  case'clang':tone(1300,0.22,'triangle',0.12,1080);tone(1950,0.3,'sine',0.06,1900);tone(3100,0.12,'square',0.025);noise(0.05,0.12,3500);break;
+  case'clang':haptic('rigid');tone(1300,0.22,'triangle',0.12,1080);tone(1950,0.3,'sine',0.06,1900);tone(3100,0.12,'square',0.025);noise(0.05,0.12,3500);break;
   case'kill':noise(0.14,0.25,500);tone(240,0.25,'sawtooth',0.08,50);break;
   case'blade':tone(2600,0.06,'sawtooth',0.05,1200);noise(0.1,0.18,900,now()+0.05);break;
   case'shot':noise(0.3,0.38,180);tone(80,0.25,'square',0.12,35);break;
@@ -175,7 +175,7 @@ function readInput(){const t=touchKeys();
   prevIN={...IN};}
 
 /* ================= СОСТОЯНИЕ ================= */
-const CFG=store.get('strazha_cfg',{big:0});
+const CFG=store.get('strazha_cfg',{big:0});if(CFG.vib==null)CFG.vib=1;
 const SAVE=store.get('strazha_prog',{m:{},parts:{},rub:0});
 function saveProg(){store.set('strazha_prog',SAVE);}
 const ST={scene:'title',modal:null,dlg:null,t:0,hint:null,hintT:0,obj:'',menu:'main'};
@@ -274,7 +274,7 @@ function buildM1(){const w=212,h=26,GR=23;const m=[];for(let y=0;y<h;y++)m.push(
     {k:'boy',x:tx(120),y:ty(GR),x1:tx(114),x2:tx(136),sp:0.45},{k:'dog',x:tx(150),y:ty(GR),x1:tx(142),x2:tx(166),sp:0.4},
     {k:'cab',x:tx(100),y:ty(GR),x1:tx(96),x2:tx(170),sp:0.9,face:1}];
   const flocks=[{x:tx(118),y:ty(12),w:40,n:4},{x:tx(150),y:ty(10),w:30,n:3},{x:tx(60),y:ty(GR),w:30,n:4},{x:tx(186),y:ty(14),w:36,n:3},{x:tx(36),y:ty(13),w:24,n:3}];
-  return {w,h,map:m,bg,ent,items,props,cps,hides,wires,crowds,views,target,trig,life,flocks,dawn:1,name:'Нарвские ворота',par:420,startX:tx(3),startY:ty(GR),GR};}
+  return {w,h,map:m,bg,ent,items,props,cps,hides,wires,crowds,views,target,trig,life,flocks,dawn:1,codex:[{id:'kv',x:tx(1)},{id:'pet',x:tx(9)},{id:'narva',x:tx(27)},{id:'cop',x:tx(48)},{id:'dvornik',x:tx(56)},{id:'izv',x:tx(97)},{id:'kalancha',x:tx(104)},{id:'putilov',x:tx(150)}].map(c=>({...c})),name:'Нарвские ворота',par:420,startX:tx(3),startY:ty(GR),GR};}
 
 const MISSIONS=[
   {n:1,name:'Нарвские ворота',year:'Январь 1905, Петербург',build:buildM1,
@@ -291,7 +291,7 @@ function startMission(n){const M=MISSIONS[n-1];if(!M.build)return;L=M.build();L.
   G={t:0,kills:0,silent:0,alarms:0,retries:0,rub:0,part:0,cp:0,flags:{},trigDone:{},shake:0,fx:[],snow:[],vision:0,done:0,deadT:0,camX:0,camY:0,slow:0,zoomK:1,tok:null,knives:[],sync:0,tgt:null};wxInit();
   L.enemies=L.ent.map(mkEnemy);L.crowds=L.crowds.map(mkCrowd);L.life=(L.life||[]).map(mkLife);L.flocks=(L.flocks||[]).map(mkFlock);cityPrep();L.softs=L.hides.map(h=>({x:h.x,y:h.y,w:h.w}));
   for(let y=0;y<L.h;y++){let x=0;while(x<L.w){if(L.map[y][x]==='s'){let x2=x;while(x2+1<L.w&&L.map[y][x2+1]==='s')x2++;L.softs.push({x:(x+x2+1)*TS/2,y:(y+1)*TS,w:(x2-x+1)*TS});x=x2+1;}else x++;}}
-  P=newPlayer(L.startX,L.startY);snapCP();
+  P=newPlayer(L.startX,L.startY);applyGear();snapCP();
   for(let i=0;i<90;i++)G.snow.push({x:Math.random()*W,y:Math.random()*H,s:rnd(0.3,1.2),d:rnd(0,TAU)});
   ST.scene='game';ST.modal=null;ST.obj='';ST.hint=null;setMusic('calm');camSnap();
   cutscene(M.brief,()=>{});}
@@ -300,7 +300,7 @@ const WPN=['blade','knife','throw'],WPN_N={blade:'Скрытый клинок',k
 function nextWeapon(){if(!P||ST.scene!=='game')return;P.wpn=(P.wpn+1)%3;if(WPN[P.wpn]==='throw'&&P.throwN<=0)P.wpn=0;toastTxt(WPN_N[WPN[P.wpn]]);sfx('grab');}
 function snapCP(){G.snap=JSON.stringify({e:L.enemies,i:L.items,f:G.flags,td:G.trigDone,rub:G.rub,part:G.part,kills:G.kills,silent:G.silent,obj:ST.obj,cp:G.cp,hp:P.hp,tn:P.throwN,cr:L.crowds,tg:G.tgt,sync:G.sync,props:L.props});}
 function restoreCP(){const s=JSON.parse(G.snap);L.enemies=s.e;L.items=s.i;G.flags=s.f;G.trigDone=s.td;G.rub=s.rub;G.part=s.part;G.kills=s.kills;G.silent=s.silent;ST.obj=s.obj;L.crowds=s.cr;G.tgt=s.tg;G.sync=s.sync;L.props=s.props;
-  const c=L.cps[s.cp];P=newPlayer(c.x,c.y);P.hp=Math.max(4,s.hp);P.throwN=s.tn;G.retries++;G.deadT=0;G.fx=[];G.tok=null;G.knives=[];G.slow=0;camSnap();}
+  const c=L.cps[s.cp];P=newPlayer(c.x,c.y);P.maxhp=6+upl('coat');P.hp=Math.max(4,s.hp);P.throwN=s.tn;G.retries++;G.deadT=0;G.fx=[];G.tok=null;G.knives=[];G.slow=0;camSnap();}
 
 /* ================= ДИАЛОГИ ================= */
 const WHO={ilya:['Илья','#f0d090'],father:['Пётр Сомов','#c0c8d0'],agent:['Человек в штатском','#e07070'],narr:['','#d8d0c0'],cop:['Городовой','#a0b0d0']};
@@ -331,11 +331,11 @@ function softBelow(x,y){let best=null,bd=1e9;for(const s of L.softs){if(s.y<y)co
     let ok=true;const tx=Math.floor(s.x/TS);for(let ty=Math.floor(y/TS)+1;ty<Math.floor((s.y-1)/TS);ty++)if(isTop(tx,ty)){ok=false;break;}if(ok){bd=d;best=s;}}}return best;}
 
 /* ================= ИГРОК ================= */
-function buzz(ms){if(!kbd&&navigator.vibrate)try{navigator.vibrate(ms)}catch(e){}}
+function buzz(ms){haptic(ms>=50?'heavy':ms>=25?'medium':'light');}
 function damage(n,fromX){if(!(P.inv>0||P.st==='dead'||P.roll>0)){buzz(60);G.hitstop=Math.max(G.hitstop||0,5);G.hurtFlash=22;G.kick=sgn(P.x-(fromX==null?P.x:fromX))*3;}if(P.inv>0||P.st==='dead'||P.roll>0)return;P.hp-=n;P.inv=60;P.hurt=16;sfx('hurt');G.shake=8;
   P.vx=sgn(P.x-(fromX==null?P.x-P.face:fromX))*2.2;if(['hang','climb','swing','zip','pull'].includes(P.st)){P.st='air';P.hang=null;P.noGrab=20;P.fallY=P.y;}
   if(P.hp<=0)die();}
-function die(){if(P.st==='dead')return;P.st='dead';P.hp=0;G.deadT=1;sfx('kill');G.shake=10;}
+function die(){if(P.st==='dead')return;haptic('error');P.st='dead';P.hp=0;G.deadT=1;sfx('kill');G.shake=10;}
 function tryGrab(dir){if(P.noGrab>0||P.vy<-2.2)return false;
   const fx=Math.floor((P.x+dir*(PW/2+5))/TS);const handY=P.y-20;
   for(let ty=Math.floor((handY-14)/TS);ty<=Math.floor((handY+8)/TS);ty++){const d=handY-ty*TS;
@@ -371,7 +371,7 @@ function updClimb(dir){const p=P;p.climbT=(p.climbT||0)+1;
   if(moved)p.climb++;}
 function landCheck(){const fell=(P.y-P.fallY)/TS;const soft=hideAt(P.x,P.y);
   if(soft){if(fell>3){fx('snow',P.x,P.y-6);sfx('land');if(fell>5)toastTxt('Прыжок веры!');}return;}
-  if(fell>13)die();else if(fell>8)damage(Math.ceil((fell-8)/2),P.x);else if(fell>2.5){sfx('land');P.land=8;}}
+  if(fell>13)die();else if(fell>8)damage(Math.ceil((fell-8)/2),P.x);else if(fell>2.5){sfx('land');P.land=8;if(fell>5)haptic('light');}}
 function updPlayer(){const p=P;p.anim++;if(p.inv>0)p.inv--;if(p.hurt>0)p.hurt--;if(p.noGrab>0)p.noGrab--;if(p.ctr>0)p.ctr--;if(p.kill>0)p.kill--;if(p.cj>0)p.cj--;if(p.land>0)p.land--;if(p.comboT>0)p.comboT--;
   if(p.st==='dead'){p.vy=Math.min(p.vy+0.35,7);moveY(p,p.vy,PW,8);return;}
   if(p.st==='sync'||p.st==='tackle')return;
@@ -452,12 +452,12 @@ function attackHit(){let hit=false;const knife=WPN[P.wpn]==='knife';for(const e 
     if(e.st!=='alert'&&e.face===P.face){finisher(e,'back');continue;}
     const bc={cop:0.3,soldier:0.25,officer:0.55}[e.k];
     if(P.atkN<3&&e.wind===0&&e.stun===0&&e.face===-P.face&&Math.random()<bc){sfx('clang');fx('spark',e.x-e.face*6,e.y-15);e.cd=Math.max(e.cd,8);e.kx=P.face*0.8;G.hitstop=Math.max(G.hitstop||0,3);alertE(e);continue;}
-    const dmg=knife?(P.atkN===3?2:1):1;e.hp-=dmg;e.stun=P.atkN===3?30:16;e.kx=P.face*(P.atkN===3?3.2:1.8);e.flash=6;G.hitstop=Math.max(G.hitstop||0,P.atkN===3?6:4);G.kick=P.face*(P.atkN===3?3:1.5);e.wind=0;if(G.tok===e)G.tok=null;
+    const dmg=(knife?(P.atkN===3?2:1):1)+(upl('blade')>=2||(upl('blade')>=1&&P.atkN===3)?1:0);e.hp-=dmg;e.stun=P.atkN===3?30:16;e.kx=P.face*(P.atkN===3?3.2:1.8);e.flash=6;G.hitstop=Math.max(G.hitstop||0,P.atkN===3?6:4);G.kick=P.face*(P.atkN===3?3:1.5);e.wind=0;if(G.tok===e)G.tok=null;
     sfx('hit');fx('blood',e.x,e.y-13);alertE(e);if(e.hp<=0)finisher(e,'fight');}}
   if(hit)G.shake=3;return hit;}
 function airKill(){if(P.vy<1.5)return;for(const e of L.enemies){if(e.dead||e.k==='line')continue;
   if(Math.abs(e.x-P.x)<11&&P.y>e.y-28&&P.y<e.y-8){finisher(e,'air');P.vy=-2.5;P.fallY=P.y;return;}}}
-function finisher(e,how){e.dead=1;e.dt=0;e.st='dead';e.how=how;e.dface=sgn(P.x-e.x)||1;if(G.tok===e)G.tok=null;G.kills++;
+function finisher(e,how){haptic('medium');e.dead=1;e.dt=0;e.st='dead';e.how=how;e.dface=sgn(P.x-e.x)||1;if(G.tok===e)G.tok=null;G.kills++;
   const silent=(how==='back'||how==='hide'||how==='air')&&WPN[P.wpn]!=='knife';
   if(silent)G.silent++;else for(const o of L.enemies)if(!o.dead&&o!==e&&Math.abs(o.x-e.x)<90&&Math.abs(o.y-e.y)<30&&o.st!=='alert')o.meter=Math.min(1,o.meter+0.6);
   P.kill=24;G.slow=how==='fight'?0:22;G.hitstop=Math.max(G.hitstop||0,how==='fight'?5:7);e.kx=-e.dface*(how==='fight'?2.5:1.2);e.flash=8;G.kick=-e.dface*2.5;buzz(how==='fight'?20:35);sfx(silent?'blade':'kill');fx('blood',e.x,e.y-13);G.shake=5;
@@ -477,7 +477,7 @@ const RANGE={cop:84,soldier:120,officer:90,line:150};
 function canSee(e){if(P.st==='dead'||P.hidden)return false;const dx=P.x-e.x,dy=P.y-e.y;
   if(Math.abs(dy)>34)return false;if(dx*e.face<-6)return false;if(Math.abs(dx)>RANGE[e.k]*(e.k==='line'?1:wxView()))return false;
   const ty=Math.floor((e.y-18)/TS);for(let x=Math.min(e.x,P.x);x<Math.max(e.x,P.x);x+=8)if(isSolid(Math.floor(x/TS),ty))return false;return true;}
-function alertE(e,quiet){if(e.st!=='alert'){e.st='alert';e.popT=14;e.lost=0;e.meter=1;G.alarms++;if(!quiet)sfx('alert');}e.face=sgn(P.x-e.x)||e.face;}
+function alertE(e,quiet){if(e.st!=='alert'){if(!quiet)haptic('warning');e.st='alert';e.popT=14;e.lost=0;e.meter=1;G.alarms++;if(!quiet)sfx('alert');}e.face=sgn(P.x-e.x)||e.face;}
 function enemyStrike(e,heavy){const dx=P.x-e.x;e.cd=45+R(rnd(0,30));if(G.tok===e)G.tok=null;
   if(Math.abs(dx)<26&&Math.abs(P.y-e.y)<20&&P.roll===0){
     if(P.blk&&P.face===-sgn(dx||1)){if(heavy){sfx('clang');damage(2,e.x);toastTxt('Блок пробит!');}else{sfx('clang');fx('spark',e.x+e.face*10,e.y-15);P.ctr=22;P.ctrE=e;e.stun=24;}}
@@ -502,7 +502,7 @@ function updEnemies(){let alert=0,susp=0;
       else if(adx<want-8&&G.tok!==e){e.x=clamp(e.x-sgn(dx)*0.5,e.x1,e.x2);}
       if(adx<=26&&e.cd===0&&(G.tok===null||G.tok.dead)&&P.st!=='dead'){G.tok=e;e.heavy=e.k==='officer'&&(++e.heavyN%2===0);e.wind=e.heavy?40:26;}}
     else{
-      if(see){const r=RANGE[e.k];const k=e.k==='line'?0.06:(1.4-adx/r)*(P.crouch?0.016:0.03)*(Math.abs(P.vx)>1.3?1.6:1)*(P.st==='climb'?1.4:1);e.meter=Math.min(1,e.meter+k);if(e.meter>=1)alertE(e);}
+      if(see){const r=RANGE[e.k];const k=e.k==='line'?0.06:(1.4-adx/r)*(P.crouch?0.016:0.03)*(Math.abs(P.vx)>1.3?1.6:1)*(P.st==='climb'?1.4:1);e.meter=Math.min(1,e.meter+k*(e.k==='line'?1:1-0.15*upl('boots')));if(e.meter>=1)alertE(e);}
       else e.meter=Math.max(0,e.meter-0.004);
       if(e.meter>0.3)susp++;
       if(e.k==='line'){e.face=-1;continue;}
@@ -553,7 +553,7 @@ function tackle(){const t=G.tgt;t.run=0;t.caught=1;P.st='tackle';P.vx=0;P.vy=0;s
     setObj('Уходи! Оторвись от погони и спрячься, потом беги к арке.');
     for(const [x,k] of [[173,'soldier'],[176,'cop'],[178,'cop']]){const e=mkEnemy({k,x:x*TS+8,y:14*TS,face:1,x1:171*TS+8,x2:194*TS+8});alertE(e,1);L.enemies.push(e);}
     G.alarms-=3;snapCP();},{mem:1});}
-function giveRing(){toastTxt('Перстень «Циферблата»');}
+function giveRing(){toastTxt('Перстень «Циферблата»');setTimeout(()=>codexOpen('cifer'),2600);}
 function finishMission(){G.done=1;const sec=G.t/60;
   let score=1200+G.silent*120+G.kills*40+G.rub*15+G.part*300-G.retries*120-G.alarms*35+(G.sync?150:0)+Math.max(0,(L.par-sec))*2;
   const rank=score>=2000?'S':score>=1600?'A':score>=1200?'B':'C';
@@ -574,7 +574,7 @@ function updItems(){for(const it of L.items){if(it.got)continue;if(Math.abs(it.x
   if(G.flags.escape&&P.x>200*TS&&P.y>21*TS&&P.st!=='dead'&&!G.done){if(G.alert){if(!G.flags.warn){G.flags.warn=1;hint('Сначала оторвись от погони: уйди из виду и спрячься в сене или в толпе.');}}else finishMission();}}
 function doSync(v){v.done=1;G.sync=1;P.st='sync';sfx('eagle');setTimeout(()=>sfx('sync'),300);G.syncT=150;
   toastTxt('СИНХРОНИЗАЦИЯ');snapCP();}
-function endSync(){P.st='stand';setObj('Человек в штатском — на крышах к востоку. Чутьё покажет его. Прыгни с каланчи в сугроб на крыше.');hint('Прыжок веры: прыгай с края каланчи вправо — внизу сугроб.');}
+function endSync(){haptic('success');P.st='stand';setObj('Человек в штатском — на крышах к востоку. Чутьё покажет его. Прыгни с каланчи в сугроб на крыше.');hint('Прыжок веры: прыгай с края каланчи вправо — внизу сугроб.');}
 
 /* ================= ЭФФЕКТЫ И КАМЕРА ================= */
 function fx(k,x,y,o){if(k==='dust'){const n=(o&&o.n)||5;for(let i=0;i<n;i++)G.fx.push({k:'pt',c:i%2?'#e8eef6':'#c4cede',x:x+rnd(-4,4),y:y-1,vx:rnd(-1.2,1.2)*(o&&o.small?0.5:1),vy:rnd(-1.4,-0.3)*(o&&o.small?0.6:1),t:0,life:rnd(12,24)});return;}
@@ -885,7 +885,7 @@ function drawHUD(){// здоровье — сегменты
   ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(4,4,74,24);ctx.strokeStyle='#6a5232';ctx.strokeRect(4.5,4.5,73,23);
   // эмблема Стражи: часы без стрелок? нет — у Стражи фонарь
   ctx.fillStyle='#c9c3b6';ctx.beginPath();ctx.arc(15,16,8,0,TAU);ctx.fill();ctx.fillStyle='#1a1a20';ctx.beginPath();ctx.moveTo(15,9);ctx.lineTo(10,21);ctx.lineTo(15,18);ctx.lineTo(20,21);ctx.closePath();ctx.fill();
-  for(let i=0;i<P.maxhp;i++){ctx.fillStyle=i<P.hp?(P.hp<=2?'#e04030':'#e8e0cc'):'#2a2620';ctx.fillRect(27+i*8,9,6,6);}
+  {const st=Math.min(8,52/P.maxhp);for(let i=0;i<P.maxhp;i++){ctx.fillStyle=i<P.hp?(P.hp<=2?'#e04030':'#e8e0cc'):'#2a2620';ctx.fillRect(27+i*st,9,st-2,6);}}
   // оружие (касание — смена)
   const wx=27,wy=17;ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(wx,wy,48,9);txt({blade:'Клинок',knife:'Нож',throw:'Ножи ×'+P.throwN}[WPN[P.wpn]],wx+2,wy+7,6,'#e8c070');
   UI.push({x:0,y:0,w:84,h:34,fn:nextWeapon});
@@ -955,12 +955,13 @@ function drawTitle(){UI=[];const t=ST.t;const g=ctx.createLinearGradient(0,0,0,H
   ctx.save();ctx.translate(W*0.8,base-47);ctx.scale(2.2,2.2);if(!spr('ilya_sync',0,0,-1))drawRig(0,0,-1,poseFor({k:'sync'}),LOOK.ilya,0);ctx.restore();
   txtS('НОЧНАЯ',W/2,H*0.15,28,'#e8dcc0','center',FD);txtS('СТРАЖА',W/2,H*0.15+30,28,'#c84a3a','center',FD);
   txtS('ПЕТЕРБУРГ · 1905 — 1917',W/2,H*0.15+46,8,'#c8bca0','center',FD);
+  if(ST.menu==='shop'){drawShop();return;}if(ST.menu==='codex'){drawCodex();return;}
   if(ST.menu==='missions'||ST.menu==='map'){if(ST.menu==='missions')mapOpen();drawMap();return;}
-  const w=150,x=(W-w)/2;let y=R(Math.min(H*0.68,H-150));const any=Object.keys(SAVE.m).length>0;
+  const w=150,x=(W-w)/2;let y=R(Math.min(H*0.62,H-176));const any=Object.keys(SAVE.m).length>0;
   button(any?'КАРТА МИССИЙ':'НАЧАТЬ ИГРУ',x,y,w,22,()=>{auInit();if(any)mapOpen();else playMission(1);},{hot:1,size:9});y+=28;
   button('ЗВУК: '+(AU.on?'ВКЛ':'ВЫКЛ'),x,y,w,18,()=>{auInit();setSound(!AU.on);});y+=24;
   button('МУЗЫКА: '+(AU.musOn?'ВКЛ':'ВЫКЛ'),x,y,w,18,()=>{auInit();setMus(!AU.musOn);});y+=24;
-  button('КНОПКИ: '+(CFG.big?'КРУПНЫЕ':'ОБЫЧНЫЕ'),x,y,w,18,()=>{CFG.big=CFG.big?0:1;store.set('strazha_cfg',CFG);});y+=24;
+  button('КНОПКИ: '+(CFG.big?'КРУПНЫЕ':'ОБЫЧНЫЕ'),x,y,w/2-2,18,()=>{CFG.big=CFG.big?0:1;store.set('strazha_cfg',CFG);},{size:7});button('ВИБРО: '+(CFG.vib?'ВКЛ':'ВЫКЛ'),x+w/2+2,y,w/2-2,18,()=>{CFG.vib=CFG.vib?0:1;store.set('strazha_cfg',CFG);haptic('medium');},{size:7});y+=24;
   button('ВСЕ ИГРЫ REJAR BOX',x,y,w,18,()=>{location.href='../../';});
   txt('Ранняя версия · миссия 1 из 15',W/2,H-8,6,'rgba(232,220,192,.55)','center');}
 function drawMissionList(){ctx.fillStyle='rgba(8,8,12,.88)';ctx.fillRect(0,0,W,H);panel(8,6,W-16,H-12);txt('МИССИИ',W/2,22,10,'#e8c070','center',FD);let y=30;const rh=Math.max(12,Math.min(17,(H-80)/18));
@@ -968,6 +969,54 @@ function drawMissionList(){ctx.fillStyle='rgba(8,8,12,.88)';ctx.fillRect(0,0,W,H
   for(const [an,s] of acts){txt(an,18,y+8,6,'#b8a070','left',FD);y+=11;for(let i=s;i<s+5;i++){const M=MISSIONS[i],ok=!!M.build,r=SAVE.m[M.n];
       button((M.n+'. '+M.name)+(r?'  ['+r.rank+']':''),16,y,W-32,rh-2,()=>startMission(M.n),{size:7,dis:!ok});if(!ok)txt('скоро',W-22,y+rh/2+2,6,'#776','right');y+=rh;}y+=2;}
   button('НАЗАД',W/2-40,H-30,80,18,()=>{ST.menu='main';},{size:7});}
+/* ================= СНАРЯЖЕНИЕ, АРХИВ, ВИБРАЦИЯ ================= */
+const UPG=[
+  {id:'coat',name:'Кафтан на вате',about:'Толстая подкладка держит удар шашки.',lv:['+1 к здоровью','+2 к здоровью'],cost:[12,25]},
+  {id:'blade',name:'Закалённый клинок',about:'Сталь от старого оружейника с Литейного.',lv:['Третий удар серии сильнее','Каждый удар сильнее'],cost:[15,30]},
+  {id:'knives',name:'Перевязь с ножами',about:'Метательные ножи всегда при себе.',lv:['3 ножа в начале миссии','6 ножей в начале миссии'],cost:[8,18]},
+  {id:'boots',name:'Мягкие валенки',about:'Шаги по снегу почти не слышны.',lv:['Замечают на 15% медленнее','Замечают на 30% медленнее'],cost:[12,25]}];
+const upl=id=>((SAVE.up||{})[id]||0);
+function buyUpg(u){const l=upl(u.id);if(l>=2)return;const c=u.cost[l];if((SAVE.rub||0)<c){sfx('hurt');toastTxt('Не хватает рублей');return;}
+  SAVE.rub-=c;SAVE.up=SAVE.up||{};SAVE.up[u.id]=l+1;saveProg();sfx('ok');haptic('success');}
+function applyGear(){P.maxhp=6+upl('coat');P.hp=P.maxhp;P.throwN=Math.max(P.throwN||0,[0,3,6][upl('knives')]);}
+// ---- Архив: короткие нейтральные справки, открываются по ходу миссии ----
+const CODEX=[
+  {id:'kv',t:'Кровавое воскресенье',s:'9 января 1905 года рабочие Петербурга с семьями пошли к Зимнему дворцу с петицией царю Николаю II. Шествие вёл священник Георгий Гапон. В нескольких местах города, в том числе у Нарвских ворот, войска открыли огонь. По официальным данным погибли около 130 человек, по другим оценкам — больше. С этого дня принято отсчитывать революцию 1905–1907 годов.'},
+  {id:'pet',t:'Петиция',s:'Рабочие просили царя о защите. В петиции были восьмичасовой рабочий день, свобода слова и собраний, ответственность чиновников перед народом и созыв Учредительного собрания. Многие шли с иконами и портретами царя, веря, что он их выслушает.'},
+  {id:'narva',t:'Нарвские ворота',s:'Триумфальная арка за Обводным каналом, построена в 1827–1834 годах по проекту Василия Стасова в честь победы в войне 1812 года. Она заменила деревянные ворота Джакомо Кваренги. Здесь начиналась дорога на Нарву и Ревель.'},
+  {id:'putilov',t:'Путиловский завод',s:'Один из крупнейших заводов Петербурга: паровозы, вагоны, пушки, десятки тысяч рабочих. В начале января 1905 года здесь уволили четырёх рабочих, завод забастовал, а за ним — почти весь город.'},
+  {id:'cop',t:'Городовой',s:'Нижний чин городской полиции. Стоял на посту на улице, следил за порядком, носил шашку и револьвер. Городовых узнавали по чёрной шинели и бляхе с номером.'},
+  {id:'dvornik',t:'Дворник',s:'В каждом доме был свой дворник: мёл улицу, колол лёд, носил дрова, ночью сторожил ворота. Дворники знали всех жильцов и помогали полиции — поэтому их и уважали, и побаивались.'},
+  {id:'izv',t:'Извозчики',s:'Главный городской транспорт до трамвая и такси. Зимой — лёгкие сани. У каждого извозчика была бляха с номером, а цену за поездку договаривались заранее.'},
+  {id:'kalancha',t:'Пожарная каланча',s:'Дозорная башня при пожарной части. Дежурный круглые сутки смотрел на город и, заметив дым, поднимал сигнал: днём — шары, ночью — фонари. Отсюда было видно полгорода.'},
+  {id:'cifer',t:'«Циферблат» (из записок Ильи)',s:'Тайный кружок со знаком часов без стрелок. Им всё равно, кто победит — царь или толпа. Важно, кто держит стрелки. Человек на крыше подал солдатам знак. Он мёртв, у меня его перстень. Остальных я найду.'}];
+function codexOpen(id){SAVE.codex=SAVE.codex||{};if(SAVE.codex[id])return;SAVE.codex[id]=1;saveProg();const c=CODEX.find(c=>c.id===id);if(c){toastTxt('Архив: «'+c.t+'»');sfx('ok');}}
+function updCodex(){if(!L.codex)return;for(const c of L.codex)if(!c.done&&P.x>c.x){c.done=1;codexOpen(c.id);}}
+const CX={sel:null,scroll:0,back:null};
+function drawCodex(){ctx.fillStyle='rgba(8,8,12,.94)';ctx.fillRect(0,0,W,H);panel(6,6,W-12,H-12,'rgba(28,22,16,.97)');
+  const got=SAVE.codex||{};const n=CODEX.filter(c=>got[c.id]).length;
+  txt('АРХИВ',W/2,22,10,'#e8c070','center',FD);txt('записей: '+n+' из '+CODEX.length,W/2,32,6,'#a89878','center');
+  if(CX.sel){const c=CODEX.find(c=>c.id===CX.sel);txt(c.t,16,50,8,'#f0e4c8','left',FD);ctx.fillStyle='#b8904a';ctx.fillRect(16,54,W-32,1);
+    wrap(c.s,W-34,7).forEach((l,i)=>txt(l,16,66+i*10,7,'#e6dcc6'));button('К СПИСКУ',W/2-45,H-32,90,18,()=>{CX.sel=null;},{size:7});return;}
+  let y=42;const rh=Math.min(19,(H-90)/CODEX.length);
+  for(const c of CODEX){const ok=!!got[c.id];button(ok?c.t:'? ? ?',14,y,W-28,rh-3,()=>{CX.sel=c.id;},{size:7,dis:!ok});y+=rh;}
+  button('НАЗАД',W/2-40,H-32,80,18,()=>{CX.sel=null;(CX.back||(()=>{}))();},{size:7});}
+function drawShop(){ctx.fillStyle='rgba(8,8,12,.94)';ctx.fillRect(0,0,W,H);panel(6,6,W-12,H-12,'rgba(28,22,16,.97)');
+  txt('СНАРЯЖЕНИЕ',W/2,22,10,'#e8c070','center',FD);txtS('₽ '+(SAVE.rub||0),W/2,36,9,'#e8c060','center',FD);
+  let y=46;const bh=Math.min(64,(H-96)/UPG.length);
+  for(const u of UPG){const l=upl(u.id);panel(12,y,W-24,bh-6,'rgba(16,13,10,.9)','#5a4a30');
+    txt(u.name,20,y+12,8,'#f0e4c8','left',FD);txt('●'.repeat(l)+'○'.repeat(2-l),W-20,y+12,8,'#e8c060','right');
+    txt(u.about,20,y+23,6,'#a89878');
+    if(l<2){txt('Ур. '+(l+1)+': '+u.lv[l],20,y+bh-16,6,'#d8ccb0');button('₽ '+u.cost[l],W-74,y+bh-28,54,16,()=>buyUpg(u),{size:7,hot:(SAVE.rub||0)>=u.cost[l]});}
+    else txt('Улучшено полностью: '+u.lv[1].toLowerCase(),20,y+bh-16,6,'#e8c060');y+=bh;}
+  txt('Рубли собираешь в миссиях — они копятся после прохождения.',W/2,H-38,6,'#887','center');
+  button('НАЗАД',W/2-40,H-30,80,18,()=>{ST.menu='map';},{size:7});}
+// ---- вибрация: Telegram HapticFeedback, иначе navigator.vibrate ----
+let hapT=0;
+function haptic(k){if(!CFG.vib)return;const n=performance.now();if(n-hapT<70)return;hapT=n;
+  try{const T=window.Telegram&&window.Telegram.WebApp,HF=T&&T.HapticFeedback;
+    if(HF&&T.isVersionAtLeast&&T.isVersionAtLeast('6.1')){if(k==='success'||k==='error'||k==='warning')HF.notificationOccurred(k);else HF.impactOccurred(k);return;}
+    if(!kbd&&navigator.vibrate)navigator.vibrate({light:15,medium:30,heavy:60,rigid:20,soft:12,success:[20,40,30],error:[60,40,60],warning:[30,30]}[k]||20);}catch(e){}}
 /* ================= ПОГОДА: МЕТЕЛЬ И РАССВЕТ ================= */
 function wxInit(){G.wx={int:0,on:0,t:0,next:60*45,dur:0,told:0,dawn:0,maxX:0};}
 function updWeather(){const w=G.wx;if(!w)return;w.t++;
@@ -1110,6 +1159,8 @@ function drawMap(){UI=[];const m=mapMetrics();if(!MAP.init){mapCenterOn(MAP.sel,
   const tw=Math.min(58,(W-60)/3);for(const a of ACTS){const x=30+(a.n-1)*(tw+2);button('АКТ '+a.rim,x,4,tw,18,()=>{mapSelect(a.first);},{size:7,hot:a.n===MAP.tab});}
   button('▶',W-26,4,22,18,()=>{showAct(ACTS[MAP.tab-1],()=>{ST.scene='title';ST.menu='map';});},{size:8});
   // карточка миссии
+  {const by=H-mapCH()-30,bw=Math.min(110,(W-18)/2);button('СНАРЯЖЕНИЕ ₽'+(SAVE.rub||0),6,by,bw,18,()=>{ST.menu='shop';},{size:7});
+   button('АРХИВ '+Object.keys(SAVE.codex||{}).length+'/'+CODEX.length,W-6-bw,by,bw,18,()=>{CX.sel=null;CX.back=()=>{ST.menu='map';};ST.menu='codex';},{size:7});}
   const M=MISSIONS[MAP.sel-1],r=SAVE.m[M.n],ok=!!M.build,ch=mapCH()-4,cy=H-ch-4,cx=6,cw=W-12;
   ctx.fillStyle='#1a150f';ctx.fillRect(0,H-mapCH()-8,W,mapCH()+8);
   UI.push({x:cx,y:cy,w:cw,h:ch,fn:()=>{}});panel(cx,cy,cw,ch,'rgba(20,16,12,.94)');
@@ -1121,12 +1172,13 @@ function drawMap(){UI=[];const m=mapMetrics();if(!MAP.init){mapCenterOn(MAP.sel,
   if(ok)button(r?'ПЕРЕИГРАТЬ':'ИГРАТЬ',cx+cw-bw-8,by,bw,20,()=>playMission(M.n),{hot:1,size:8});
   else txt('скоро',cx+cw-bw/2-8,by+13,8,'#887','center',FD);
   button('‹',bx,by,22,20,()=>mapSelect(Math.max(1,M.n-1)),{size:9});button('›',bx+26,by,22,20,()=>mapSelect(Math.min(15,M.n+1)),{size:9});}
-function drawPause(){ctx.fillStyle='rgba(6,8,12,.82)';ctx.fillRect(0,0,W,H);const w=170,x=(W-w)/2;let y=H/2-80;panel(x-8,y-14,w+16,176);
+function drawPause(){ctx.fillStyle='rgba(6,8,12,.82)';ctx.fillRect(0,0,W,H);const w=170,x=(W-w)/2;let y=H/2-92;panel(x-8,y-14,w+16,200);
   txt('ПАУЗА',W/2,y,11,'#e8c070','center',FD);y+=12;
   button('ПРОДОЛЖИТЬ',x,y,w,20,()=>{ST.modal=null;},{hot:1});y+=26;
   button('С КОНТРОЛЬНОЙ ТОЧКИ',x,y,w,18,()=>{ST.modal=null;restoreCP();});y+=24;
   button('МИССИЯ ЗАНОВО',x,y,w,18,()=>{startMission(L.mi);});y+=24;
   button('ЗВУК: '+(AU.on?'ВКЛ':'ВЫКЛ'),x,y,w/2-2,18,()=>setSound(!AU.on),{size:7});button('МУЗЫКА: '+(AU.musOn?'ВКЛ':'ВЫКЛ'),x+w/2+2,y,w/2-2,18,()=>setMus(!AU.musOn),{size:7});y+=24;
+  button('АРХИВ',x,y,w,18,()=>{CX.sel=null;CX.back=()=>{ST.modal='pause';};ST.modal='codex';});y+=24;
   button('В ГЛАВНОЕ МЕНЮ',x,y,w,18,()=>{ST.scene='title';ST.modal=null;ST.menu='main';setMusic('calm');});y+=28;
   wrap(kbd||!('ontouchstart' in window)?'Стрелки — движение и лазание, пробел — прыжок, J — удар, K — блок (K + стрелка — перекат), L — чутьё, Q — оружие.':'Касание значка оружия слева вверху — смена оружия. БЛОК + направление — перекат.',w,6).forEach((l,i)=>txt(l,W/2,y+i*8,6,'#998','center'));}
 function drawResult(){ctx.fillStyle='rgba(6,8,12,.9)';ctx.fillRect(0,0,W,H);const r=G.result,w=190,x=(W-w)/2;let y=H*0.15;
@@ -1146,7 +1198,7 @@ function update(){ST.t++;readInput();if(ST.scene!=='game'&&AU.ctx){if(AU.mus!=='
   if(G.syncT>0){G.syncT--;G.camX+=((G.tgt?0:0))*0;if(G.syncT===0)endSync();}
   if(G.slow>0){G.slow--;if(G.slow%2===1){updCam();return;}}
   if(G.hitstop>0){G.hitstop--;updFx();return;}
-  G.t++;updWeather();updPlayer();feel();updEnemies();updCrowds();updLife();updKnives();updTarget();updItems();updFx();updCam();
+  G.t++;updWeather();updPlayer();feel();updEnemies();updCrowds();updLife();updCodex();updKnives();updTarget();updItems();updFx();updCam();
   G.vision+=((IN.v&&P.st!=='dead'?1:0)-G.vision)*0.15;
   if(G.shake>0)G.shake*=0.85;
   if(P.st==='dead'){G.deadT++;if(G.deadT>90)restoreCP();}}
@@ -1169,13 +1221,14 @@ function draw(){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#000';ctx.fillRect(
   if(P.st==='dead'){ctx.fillStyle='rgba(60,0,0,'+Math.min(0.6,G.deadT/90)+')';ctx.fillRect(0,0,W,H);txtS('ИЛЬЯ ПОГИБ',W/2,H/2,14,'#f0d0c0','center',FD);}
   drawHUD();
   if(ST.modal==='pause'){UI=[];drawPause();}
+  if(ST.modal==='codex'){UI=[];drawCodex();}
   if(ST.modal==='result'){UI=[];drawResult();}
   if(ST.dlg){UI=[];drawDialog();}}
 let last=0,acc=0;function loop(ts){requestAnimationFrame(loop);if(!last)last=ts;acc+=Math.min(100,ts-last);last=ts;
   while(acc>=1000/60){update();acc-=1000/60;}draw();}
 layout();requestAnimationFrame(loop);
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
-window.__strazha={get P(){return P},get L(){return L},get G(){return G},ST,IN,K,startMission,step:n=>{for(let i=0;i<(n||1);i++)update();},dlgNext,restoreCP,SAVE,tile,MISSIONS,nextWeapon,MAP,mapOpen,playMission,showAct,ACTS,get ACT(){return ST.act},dialog,get TRKNOW(){return TCUR&&TCUR.k},get TBK(){return Object.keys(TB)},AU};
+window.__strazha={get P(){return P},get L(){return L},get G(){return G},ST,IN,K,startMission,step:n=>{for(let i=0;i<(n||1);i++)update();},dlgNext,restoreCP,SAVE,tile,MISSIONS,nextWeapon,UPG,CODEX,buyUpg,CX,MAP,mapOpen,playMission,showAct,ACTS,get ACT(){return ST.act},dialog,get TRKNOW(){return TCUR&&TCUR.k},get TBK(){return Object.keys(TB)},AU};
 })();
 
 </script>
