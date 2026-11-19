@@ -61,7 +61,7 @@ function button(label,x,y,w,h,fn,o){o=o||{};const hov=PT.over&&PT.x>=x&&PT.x<=x+
 /* ================= ЗВУК ================= */
 const AU={ctx:null,on:store.get('strazha_snd',true),mus:null,nextT:0,step:0,master:null};
 function auInit(){if(AU.ctx)return;try{AU.ctx=new (window.AudioContext||window.webkitAudioContext)();AU.master=AU.ctx.createGain();AU.master.gain.value=AU.on?0.5:0;AU.master.connect(AU.ctx.destination);
-  AU.sfxG=AU.ctx.createGain();AU.sfxG.connect(AU.master);AU.musG=AU.ctx.createGain();AU.musG.gain.value=AU.musOn?1:0;AU.musG.connect(AU.master);ambInit();if(AU.mus)setMusic(AU.mus);setTimeout(()=>['night','mem','chase'].forEach(loadTrack),5000);}catch(e){}}
+  AU.sfxG=AU.ctx.createGain();AU.sfxG.connect(AU.master);AU.musG=AU.ctx.createGain();AU.musG.gain.value=AU.musOn?1:0;AU.musG.connect(AU.master);ambInit();if(AU.mus)setMusic(AU.mus);setTimeout(()=>['night','chase','mem'].forEach(loadTrack),1500);}catch(e){}}
 function setSound(v){AU.on=v;store.set('strazha_snd',v);if(AU.master)AU.master.gain.value=v?0.5:0;}
 function tone(f,d,type,vol,slide,t0){if(!AU.ctx||!AU.on)return;const c=AU.ctx,t=t0||c.currentTime;const o=c.createOscillator(),g=c.createGain();
   o.type=type||'square';o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,slide),t+d);
@@ -113,13 +113,15 @@ const TRKV={theme:0.55,night:0.5,chase:0.5,mem:0.55};
 const TB={},TL={};let TCUR=null;// буферы, загрузка, текущий {k,src,g}
 AU.musOn=store.get('strazha_mus',true);
 function trackFor(k){return k==='calm'?(ST.scene==='game'?'night':'theme'):k==='tense'||k==='chase'?'chase':k;}
+const TRAW={};function prefetchTrack(k){if(!TRAW[k]){TRAW[k]=fetch(TRK[k]).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer();});TRAW[k].catch(()=>{});}return TRAW[k];}
+try{prefetchTrack('theme');prefetchTrack('night');}catch(e){}// качаем ещё до первого касания
 function loadTrack(k){if(TB[k]||TL[k]||!AU.ctx)return;TL[k]=1;
-  fetch(TRK[k]).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer();}).then(b=>new Promise((ok,no)=>AU.ctx.decodeAudioData(b,ok,no))).then(buf=>{TB[k]=buf;if(trackFor(AU.mus)===k)playTrack(k);}).catch(()=>{TL[k]=2;});}
+  prefetchTrack(k).then(b=>new Promise((ok,no)=>AU.ctx.decodeAudioData(b,ok,no))).then(buf=>{TB[k]=buf;if(trackFor(AU.mus)===k)playTrack(k);}).catch(()=>{TL[k]=2;});}
 function playTrack(k){const c=AU.ctx;if(!c||!AU.musG)return;if(TCUR&&TCUR.k===k)return;const t=c.currentTime;
   if(TCUR){const o=TCUR;o.g.gain.cancelScheduledValues(t);o.g.gain.setValueAtTime(o.g.gain.value,t);o.g.gain.linearRampToValueAtTime(0,t+1.2);try{o.src.stop(t+1.3);}catch(e){}TCUR=null;}
   if(!k||!TB[k])return;const src=c.createBufferSource();src.buffer=TB[k];src.loop=true;const g=c.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(TRKV[k]||0.5,t+1.5);
   src.connect(g);g.connect(AU.musG);src.start(t);TCUR={k,src,g};}
-function hasTrack(){const k=trackFor(AU.mus);return !!(k&&TB[k]);}
+function hasTrack(){const k=trackFor(AU.mus);return !!(k&&(TB[k]||TL[k]===1||(TRK[k]&&!TL[k])));}// пока Suno-трек грузится — тишина (эмбиент играет), синтез только если файл не загрузился
 function setMusic(k){if(AU.mus!==k){AU.mus=k;AU.step=0;}const tk=trackFor(k);if(!TCUR||TCUR.k!==tk){if(TB[tk])playTrack(tk);else{if(TCUR)playTrack(null);loadTrack(tk);}}}
 function setMus(v){AU.musOn=v;store.set('strazha_mus',v);if(AU.musG)AU.musG.gain.value=v?1:0;}
 // ---- атмосфера: ветер, далёкий колокол, гул толпы ----
@@ -1748,7 +1750,7 @@ let last=0,acc=0;function loop(ts){requestAnimationFrame(loop);if(!last)last=ts;
   while(acc>=1000/60){update();acc-=1000/60;}draw();}
 layout();requestAnimationFrame(loop);
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
-window.__strazha={get P(){return P},pairTargets,get L(){return L},get G(){return G},ST,IN,K,startMission,step:n=>{for(let i=0;i<(n||1);i++)update();},dlgNext,restoreCP,SAVE,tile,MISSIONS,nextWeapon,mapZoom,ACH,ach,useWhistle,finishMission,startSide,UPG,CODEX,buyUpg,CX,MAP,mapOpen,playMission,showAct,ACTS,get ACT(){return ST.act},dialog,QL,get TRKNOW(){return TCUR&&TCUR.k},get TBK(){return Object.keys(TB)},AU};
+window.__strazha={get P(){return P},pairTargets,AU,TB,TL,get TCUR(){return TCUR},get L(){return L},get G(){return G},ST,IN,K,startMission,step:n=>{for(let i=0;i<(n||1);i++)update();},dlgNext,restoreCP,SAVE,tile,MISSIONS,nextWeapon,mapZoom,ACH,ach,useWhistle,finishMission,startSide,UPG,CODEX,buyUpg,CX,MAP,mapOpen,playMission,showAct,ACTS,get ACT(){return ST.act},dialog,QL,get TRKNOW(){return TCUR&&TCUR.k},get TBK(){return Object.keys(TB)},AU};
 })();
 
 </script>
