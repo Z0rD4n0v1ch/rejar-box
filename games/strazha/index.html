@@ -380,10 +380,15 @@ function updClimb(dir){const p=P;p.climbT=(p.climbT||0)+1;
   if(moved)p.climb++;}
 function landCheck(){const fell=(P.y-P.fallY)/TS;const soft=hideAt(P.x,P.y)||hideAt(P.x-5,P.y)||hideAt(P.x+5,P.y);
   if(soft){if(fell>3){fx('snow',P.x,P.y-6);sfx('land');if(fell>5){toastTxt('Прыжок веры!');ach('leap');}}return;}
+  if(P.rollBuf>0&&fell>2.5&&fell<=18){// перекат: БЛОК перед приземлением гасит удар
+    P.rollBuf=0;const dir=IN.l?-1:IN.r?1:P.face;P.face=dir;P.roll=20;P.vx=dir*2.4;P.inv=Math.max(P.inv,16);P.rollLock=1;sfx('roll');fx('dust',P.x,P.y,{n:8});haptic('light');
+    if(fell>13)damage(Math.ceil((fell-13)/2),P.x);if(fell>8){G.rollN=(G.rollN||0)+1;toastTxt('Перекат!');if(G.rollN>=5)ach('roll5');}return;}
+  if(fell>8&&fell<=18&&P.st!=='dead')hint('Перед самым приземлением жми БЛОК — Илья уйдёт в перекат и не разобьётся.');
   if(fell>13)die();else if(fell>8)damage(Math.ceil((fell-8)/2),P.x);else if(fell>2.5){sfx('land');P.land=8;if(fell>5)haptic('light');}}
 function updPlayer(){const p=P;p.anim++;if(p.inv>0)p.inv--;if(p.hurt>0)p.hurt--;if(p.noGrab>0)p.noGrab--;if(p.ctr>0)p.ctr--;if(p.kill>0)p.kill--;if(p.cj>0)p.cj--;if(p.land>0)p.land--;if(p.comboT>0)p.comboT--;
   if(p.st==='dead'){p.vy=Math.min(p.vy+0.35,7);moveY(p,p.vy,PW,8);return;}
   if(p.st==='sync'||p.st==='tackle'||p.st==='hook')return;
+  if(p.rollBuf>0)p.rollBuf--;if(IN.b&&!p.bWas&&p.st==='air'&&p.vy>0)p.rollBuf=16;p.bWas=IN.b;
   const dir=(IN.r?1:0)-(IN.l?1:0);
   if(IN.jP)p.jbuf=8;else if(p.jbuf>0)p.jbuf--;
   // висит на краю
@@ -706,7 +711,7 @@ function drawRig(x,y,face,pose,lk,speed){ctx.save();ctx.translate(x,y);ctx.scale
 let o_glint=1;
 const WHITE={coat:'#fff',coatD:'#eee',sleeve:'#fff',sleeveB:'#eee',leg:'#fff',legD:'#eee',body:'#fff',skin:'#fff',hat:'',long:1};
 const LOOK={
-  ilya:{coat:'#2c313c',coatD:'#1e222b',sleeve:'#2c313c',sleeveB:'#1e222b',leg:'#26262c',legD:'#1a1a20',skin:'#e2c2a2',hat:'hood',hood:'#c9c3b6',sash:'#a12a26',belt:'#3a2a1a',long:1},
+  ilya:{coat:'#2c313c',coatD:'#1e222b',sleeve:'#2c313c',sleeveB:'#1e222b',leg:'#26262c',legD:'#1a1a20',skin:'#e2c2a2',hat:'hood',hood:'#4a4038',sash:'#4e3a2a',belt:'#3a2a1a',long:1},
   cop:{coat:'#181a24',coatD:'#10121a',leg:'#181a24',legD:'#10121a',skin:'#d8b090',hat:'papakha',hatC:'#121214',belt:'#b8823a',cord:'#d09040',weapon:'saber',long:1},
   soldier:{coat:'#5c5a4a',coatD:'#46443a',leg:'#4c4a3e',legD:'#3c3a30',skin:'#d8b090',hat:'cap',hatC:'#4a4a3a',band:'#a02020',belt:'#3a2a1a',weapon:'rifle',long:1},
   officer:{coat:'#2a3628',coatD:'#1e281e',leg:'#2a2a30',legD:'#1e1e24',skin:'#dcb494',hat:'cap',hatC:'#2a3628',band:'#b02424',belt:'#c8a040',epaul:'#e0c060',weapon:'saber',beard:'#5a4030',long:1},
@@ -1089,6 +1094,7 @@ function drawMech(){
 const ACH=[
   {id:'blade',t:'Тихий клинок',d:'Убить врага скрытым клинком, не подняв тревоги'},
   {id:'leap',t:'Прыжок веры',d:'Прыгнуть с высоты в сено или сугроб'},
+  {id:'roll5',t:'Кошачья походка',d:'Пять раз уйти в перекат после высокого прыжка'},
   {id:'sync',t:'Город как на ладони',d:'Синхронизироваться на каланче'},
   {id:'counter3',t:'Мастер контрудара',d:'Три контрудара за одну миссию'},
   {id:'crows',t:'Гроза ворон',d:'Вспугнуть 10 стай ворон'},
