@@ -764,7 +764,9 @@ const CITY={ok:0,m:{"stack": [0, 0, 42, 250], "mast": [43, 0, 143, 230], "crane"
 (function(){let n=0;const done=()=>{if(++n===3)CITY.ok=1;};
   const a=new Image();a.onload=()=>{CITY.img=a;done();};a.src='art/city.png';
   const f=new Image();f.onload=()=>{CITY.far=f;done();};f.src='art/sky_far.png';
-  const m=new Image();m.onload=()=>{CITY.mid=m;done();};m.src='art/city_mid.png';const mw=new Image();mw.onload=()=>{CITY.midW=mw;};mw.src='art/city_mid_warm.png';})();
+  const m=new Image();m.onload=()=>{CITY.mid=m;done();};m.src='art/city_mid.png';const mw=new Image();mw.onload=()=>{CITY.midW=mw;};mw.src='art/city_mid_warm.png';
+  const bk=new Image();bk.onload=()=>{CITY.back=bk;};bk.src='art/city_back.png';const nr=new Image();nr.onload=()=>{CITY.near=nr;};nr.src='art/city_near.png';})();
+const NEAR_CH=[[0.0527, 0.5256], [0.2909, 0.4915], [0.2891, 0.4744], [0.3818, 0.2607], [0.5964, 0.5342], [0.5473, 0.5427], [0.6727, 0.2436]];
 const FAC={1:'facade_ochre',2:'facade_grey',3:'facade_rose',4:'facade_green',5:'facade_rose',6:'facade_grey',7:'tower_brick',8:'facade_green'},FLIT={facade_ochre:1,facade_green:1};
 function cimg(name,dx,dy,dw,dh,sx,sy,sw,sh){const f=CITY.m[name];if(!f)return;ctx.drawImage(CITY.img,f[0]+(sx||0),f[1]+(sy||0),sw||f[2],sh||f[3],dx,dy,dw,dh);}
 function cprop(name,x,y,o){const f=CITY.m[name];if(!CITY.ok||!f)return false;o=o||{};const w=f[2]/2,h=f[3]/2;cimg(name,x-w/2,y-h+(o.dy||0),w,h);return true;}
@@ -782,8 +784,18 @@ function drawFacadeCell(tx,ty,b,sx,sy){const name=b===9?'brick':FAC[b];if(!name)
 function drawSky(){ctx.drawImage(skySpr(),0,0,W,H);
   // луна
   {const md=(ST.scene==='game'&&G&&G.wx&&L&&L.dawn)?G.wx.dawn:0;const ma=Math.max(0,1-md*1.3);if(ma>0){ctx.globalAlpha=ma;ctx.fillStyle='rgba(240,230,200,.9)';ctx.beginPath();ctx.arc(W*0.78,H*0.12+md*30,9,0,TAU);ctx.fill();ctx.fillStyle='rgba(240,230,200,.08)';ctx.beginPath();ctx.arc(W*0.78,H*0.12+md*30,26,0,TAU);ctx.fill();ctx.globalAlpha=1;}}
-  if(CITY.ok){const MID=(ST.scene==='game'&&L&&L.season&&CITY.midW)?CITY.midW:CITY.mid;for(const [im,pk,hh,by] of [[CITY.far,0.08,0.42,0.66],[MID,0.22,0.5,0.9]]){const h=H*hh,w=im.width*h/im.height;const ox=-((G.camX*Z*pk)%w),y=H*by-h-G.camY*Z*pk*0.4;
-      for(let x=ox-w;x<W;x+=w)ctx.drawImage(im,x,y,w+1,h);if(im===MID&&y+h<H){ctx.fillStyle='#1c1b22';ctx.fillRect(0,y+h-1,W,H-y-h+1);}}
+  if(CITY.ok){const MID=(ST.scene==='game'&&L&&L.season&&CITY.midW)?CITY.midW:CITY.mid;
+    // многослойный Петербург: дальние ориентиры → дальний город → дома → ближние крыши
+    // низ слоя привязан к линии крыш: с крыши видно весь горизонт, с улицы — верхушки в просветах
+    const inG=ST.scene==='game'&&L&&L.GR,dy=inG?(G.camY-(L.GR-19)*TS)*Z*(G.zoomK||1):H*0.4;
+    const LY=[[CITY.far,0.08,0.42,0.274,0.15,0,'#262a38'],[CITY.back,0.14,0.34,0.257,0.25,'50,58,80','#22263a'],[MID,0.22,0.5,0.432,0.35,'44,46,62','#1c1b22'],[CITY.near,0.36,0.44,0.506,0.5,0,'#111118']];
+    for(const [im,pk,hh,by,vv,fog,fill] of LY){if(!im)continue;const h=H*hh,w=im.width*h/im.height;const ox=-((G.camX*Z*pk)%w),y=H*by-h-dy*vv;
+      for(let x=ox-w;x<W;x+=w)ctx.drawImage(im,x,y,w+1,h);
+      if(y+h<H){ctx.fillStyle=fill;ctx.fillRect(0,y+h-1,W,H-y-h+1);}
+      if(im===CITY.near){
+        if(QL.q<2){const gs=glowSpr(7,'118,122,140',0.3),t=(G.t||0);for(const [cx,cy] of NEAR_CH)for(let x=ox-w;x<W+w;x+=w){const sx=x+cx*w,sy=y+cy*h;if(sx<-30||sx>W+30)continue;
+          for(let i=0;i<4;i++){const k=((t*0.012+i/4+cx*7)%1),r=1+k*1.6;ctx.globalAlpha=(1-k)*0.8;ctx.drawImage(gs,sx+k*16-7*r,sy-k*34-7*r,14*r,14*r);}}ctx.globalAlpha=1;}}
+      if(fog){const fy=y+h*0.62,g=ctx.createLinearGradient(0,fy,0,y+h);g.addColorStop(0,'rgba('+fog+',0)');g.addColorStop(1,'rgba('+fog+',.55)');ctx.fillStyle=g;ctx.fillRect(0,fy,W,y+h-fy);}}
     const fg2=ctx.createLinearGradient(0,H*0.55,0,H);fg2.addColorStop(0,'rgba(90,70,80,0)');fg2.addColorStop(1,'rgba(90,70,80,.3)');ctx.fillStyle=fg2;ctx.fillRect(0,H*0.55,W,H*0.45);return;}
   const layers=[[0.1,'#1c2032',90,60,0.62],[0.25,'#161a28',70,90,0.7],[0.45,'#10131e',60,120,0.8]];
   for(const [pk,col,step,hh,base] of layers){const px=G.camX*Z*pk,py=G.camY*Z*pk*0.5;ctx.fillStyle=col;const by=H*base-py;
@@ -927,6 +939,13 @@ function drawVision(){const v=G.vision;if(v<=0.01)return;
   for(const c of L.crowds)if(!c.gone&&!c.flee){ctx.strokeStyle='rgba(120,255,160,'+0.6*v+')';ctx.strokeRect(c.x-c.n*3.5-5,c.y-26,c.n*7+10,26);}
   for(const vw of L.views)if(!vw.done){ctx.fillStyle='rgba(255,220,80,'+0.7*v+')';ctx.fillRect(vw.x-2,vw.y-60,4,14);}
   if(G.tgt&&!G.tgt.dead){ctx.fillStyle='rgba(255,210,60,'+0.75*v+')';ctx.fillRect(G.tgt.x-5,G.tgt.y-26,10,26);}}
+function drawFG(){if(!L||!L.GR||QL.q>=2||!(ST.scene==='game'))return;const zz=Z*G.zoomK,gy=(L.GR*TS-G.camY)*zz,pk=1.4,fy=H/2+(gy-H/2)*pk;if(fy>H+70)return;
+  const sp=230,px=G.camX*zz*pk,i0=Math.floor(px/sp)-1;ctx.fillStyle='rgba(7,7,11,.88)';const heads=[];
+  for(let i=i0;i<i0+W/sp+3;i++){const r=hash(i,77),x=i*sp-px+hash(i,5)*90;
+    if(r<0.34){const top=fy-150;ctx.fillRect(x-2,top,4,H-top);ctx.fillRect(x-6,top+150*0.82,12,6);ctx.fillRect(x-8,top-14,16,3);ctx.fillRect(x-6,top-11,12,12);ctx.fillRect(x-3,top-18,6,4);heads.push([x,top-5]);}
+    else if(r<0.62){const yy=fy-10;ctx.fillRect(x-70,yy,140,3);ctx.fillRect(x-70,yy+18,140,3);for(let k=-70;k<=70;k+=9){ctx.fillRect(x+k-1,yy-6,2,H-yy+6);ctx.fillRect(x+k-2,yy-8,4,3);}ctx.fillStyle='rgba(200,210,226,.35)';ctx.fillRect(x-70,yy-1,140,1.5);ctx.fillStyle='rgba(7,7,11,.88)';}
+    else if(r<0.75){ctx.fillRect(x-5,fy-26,10,H-fy+26);ctx.beginPath();ctx.arc(x,fy-26,5,Math.PI,0);ctx.fill();}}
+  if(heads.length){const gs=glowSpr(18,'255,190,110',0.35);ctx.globalCompositeOperation='lighter';for(const [x,y] of heads){ctx.drawImage(gs,x-18,y-18);ctx.fillStyle='rgba(255,210,140,.7)';ctx.fillRect(x-4,y-4,8,7);}ctx.globalCompositeOperation='source-over';}}
 function drawSnowFG(){ctx.fillStyle='rgba(240,245,255,.85)';for(const s of G.snow)ctx.fillRect(s.x,s.y,s.s>0.9?2:1,s.s>0.9?2:1);}
 function drawVignette(){if(QL.q<2)ctx.drawImage(vigSpr(),0,0);}
 
@@ -1711,7 +1730,7 @@ function draw(){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#000';ctx.fillRect(
   drawWater();drawTiles();for(const o of L.props)drawProp(o);drawLights();drawCps();for(const it of L.items)drawItem(it);
   drawLifeBack();drawCrowds();drawLife();for(const e of L.enemies)drawEnemy(e);drawGuide();drawSideFG();drawAct1();drawClerk();drawMech();drawGroupMarks();drawTarget();drawPlayer();drawFx();drawVision();for(const e of L.enemies)drawEnemyUI(e);
   ctx.restore();
-  drawSnowFG();drawRain();drawWeatherFG();drawVignette();
+  drawFG();drawSnowFG();drawRain();drawWeatherFG();drawVignette();
   {const hf=(G.hurtFlash||0)/22,low=P.hp<=2&&P.st!=='dead'?0.25+0.2*Math.sin(G.t*0.09):0,a=Math.max(hf*0.55,low);
    if(a>0.01){const g=ctx.createRadialGradient(W/2,H*0.45,Math.min(W,H)*0.25,W/2,H*0.45,Math.max(W,H)*0.7);g.addColorStop(0,'rgba(160,0,0,0)');g.addColorStop(1,'rgba(160,0,0,'+a+')');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}}
   if(G.slow>0){ctx.fillStyle='rgba(255,240,220,'+(G.slow/22)*0.12+')';ctx.fillRect(0,0,W,H);}
